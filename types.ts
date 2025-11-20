@@ -28,6 +28,7 @@ export interface Product {
     maxStock?: number; // Optional/Deprecated
     isSaleClosed: boolean;
     isComingSoon: boolean;
+    releaseDate?: number; // Timestamp for countdown
     totalSold: number;
     buyLink?: string; // URL for the buy button action
     extraInfo?: { label: string; value: string; iconType?: string }[]; // Added iconType
