@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { User } from '../types';
@@ -139,8 +138,8 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
 
     return (
         <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
-            {/* Image: Increased Height for desktop (md:h-64) */}
-            <div className="relative w-full h-48 sm:h-52 md:h-64 overflow-hidden">
+            {/* Image: Compact on Desktop with md:h-48 for 5-col grid */}
+            <div className="relative w-full h-48 sm:h-52 md:h-48 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
@@ -349,7 +348,7 @@ const GuestPanel: React.FC = () => {
     return (
         <div className="flex-grow w-full bg-gray-50 font-sans flex flex-col min-h-screen">
              {isLoading && <LoadingScreen />}
-            <header className="bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-all duration-500 h-14">
+             <header className="bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-all duration-500 h-14">
                 <Logo />
                 <nav className="hidden md:flex items-center space-x-4">
                     {guestNavItems.map(item => (
@@ -455,8 +454,8 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
         
          <div className="bg-white py-6 border-t border-gray-100">
              <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
-             {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 px-2 max-w-7xl mx-auto items-start">
+             {/* Updated Grid: 5 columns on XL screens */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 px-2 max-w-7xl mx-auto items-start">
                 {products.slice(0, 8).map(p => (
                      <div key={p.id} className="transform origin-top">
                          <ProductCard product={p} onAction={onProductClick} />
@@ -471,8 +470,8 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
 const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => void }> = ({ products, onAction }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Produk</h2>
-        {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 items-start">
+        {/* Updated Grid: 5 columns on XL screens */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 items-start">
             {products.map(p => (
                  <ProductCard key={p.id} product={p} onAction={onAction} />
             ))}

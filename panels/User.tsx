@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../App';
 import { HomeIcon, ProductIcon, CartIcon, PaymentIcon, OrdersIcon, ProfileIcon, LogoutIcon, ClockIcon, LockIcon, SunIcon, GlobeAltIcon, MapPinIcon, CalendarIcon, InfoIcon, TrashIcon, CheckIcon, XMarkIcon, EditIcon, HeadsetIcon, EnvelopeIcon, WhatsappIcon, PlusIcon, MinusIcon, XCircleIcon, PaperAirplaneIcon } from '../components/Icons';
@@ -349,8 +348,8 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
 
     return (
         <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
-             {/* Image Container: Wider on Desktop with md:h-64 */}
-             <div className="relative w-full h-48 sm:h-52 md:h-64 overflow-hidden">
+             {/* Image Container: Compact on Desktop with md:h-48 for 5-col grid */}
+             <div className="relative w-full h-48 sm:h-52 md:h-48 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
@@ -984,8 +983,8 @@ const UserHome: React.FC<{
                 </button>
             </div>
              <h3 className="text-sm font-bold mb-4 text-gray-800 text-left pl-2 border-l-4 border-brand-orange">Rekomendasi Untuk Anda</h3>
-             {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-8 items-start">
+             {/* Updated Grid: 5 columns on XL screens */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 mb-8 items-start">
                 {products.slice(0, 5).map(p => (
                     <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
                 ))}
@@ -997,8 +996,8 @@ const UserHome: React.FC<{
 const UserProducts: React.FC<{ products: Product[], onAddToCart: (p: Product) => void, onBuy: (p: Product) => void }> = ({ products, onAddToCart, onBuy }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Lengkap</h2>
-        {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 items-start">
+        {/* Updated Grid: 5 columns on XL screens */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 items-start">
             {products.map(p => (
                  <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
             ))}
@@ -1024,7 +1023,7 @@ const UserCart: React.FC<{ cart: {product: Product, quantity: number}[], onRemov
         )}
     </div>
 );
-
+// ... (UserPayment, UserOrders, UserProfile, and other component implementations remain unchanged)
 const UserPayment = () => {
     // ... UserPayment implementation remains same
     const [orders, setOrders] = useState<Order[]>([]);
