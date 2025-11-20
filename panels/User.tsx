@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../App';
 import { HomeIcon, ProductIcon, CartIcon, PaymentIcon, OrdersIcon, ProfileIcon, LogoutIcon, ClockIcon, LockIcon, SunIcon, GlobeAltIcon, MapPinIcon, CalendarIcon, InfoIcon, TrashIcon, CheckIcon, XMarkIcon, EditIcon, HeadsetIcon, EnvelopeIcon, WhatsappIcon, PlusIcon, MinusIcon, XCircleIcon, PaperAirplaneIcon } from '../components/Icons';
@@ -304,18 +305,19 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
     };
 
     // Adjusted button: Large enough for mobile touch, clear text
-    const buttonBaseClass = "group w-[calc(100%-24px)] mx-3 mb-3 h-10 rounded-lg font-metropolis font-bold tracking-wide text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
+    // Added mx-2 for consistent spacing with stock bar
+    const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
         const isClosed = product.isSaleClosed || product.stock === 0;
         
         if (product.isComingSoon && !isClosed) {
              return (
-                <div className="flex flex-col w-full px-3 mb-3 mt-auto">
+                <div className="flex flex-col w-full px-2 mb-2 mt-auto">
                      <div className="flex justify-center mb-1">
                         {product.releaseDate && <ProductCountdown targetDate={product.releaseDate} />}
                     </div>
-                    <div className={`w-full h-10 rounded-lg font-metropolis font-bold tracking-wide text-xs shadow-sm flex items-center justify-center gap-1.5 bg-yellow-100 text-yellow-800 border border-yellow-200 cursor-not-allowed`}>
+                    <div className={`w-full h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex items-center justify-center gap-1.5 bg-yellow-100 text-yellow-800 border border-yellow-200 cursor-not-allowed`}>
                         <ClockIcon />
                         <span className="uppercase">Segera Hadir</span>
                     </div>
@@ -325,12 +327,12 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
         
         if (isClosed) {
              return (
-                <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[40px]`}>
+                <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
                         <span className="uppercase">Close</span>
                     </div>
-                    <span className="text-[9px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
+                    <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
@@ -338,7 +340,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
              <button onClick={onBuy} className={`${buttonBaseClass} bg-green-600 text-white border-b-2 border-green-700 hover:bg-green-700 hover:shadow-green-600/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
                 <span className="transform transition-transform duration-300 group-hover:translate-x-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                     </svg>
                 </span>
@@ -347,42 +349,42 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
     };
 
     return (
-        <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
-             {/* Image Container: Compact on Desktop with md:h-48 for 5-col grid */}
-             <div className="relative w-full h-48 sm:h-52 md:h-48 overflow-hidden">
+        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
+             {/* Image Container: Compact on Desktop with md:h-36 */}
+             <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
-                            <span className="text-brand-red font-bold text-xs transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
+                            <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
                         </div>
                     </div>
                 )}
                 {product.isComingSoon && !product.isSaleClosed && product.stock > 0 && (
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
-                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md">
-                            <span className="text-brand-orange font-bold text-xs">SOON</span>
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
+                            <span className="text-brand-orange font-bold text-[10px]">SOON</span>
                         </div>
                     </div>
                 )}
 
-                {/* Category Badge - Larger */}
-                <div className="absolute top-3 left-3 z-20">
-                    <span className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full uppercase tracking-wider font-bold shadow-sm ${product.category === 'digital' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
+                {/* Category Badge */}
+                <div className="absolute top-2 left-2 z-20">
+                    <span className={`text-[8px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold shadow-sm ${product.category === 'digital' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
                         {product.category === 'digital' ? 'Web / Digital' : 'Fisik'}
                     </span>
                 </div>
 
-                {/* Badges - Larger for Visibility */}
-                <div className="absolute bottom-3 left-0 w-full px-3 flex justify-between items-end pointer-events-none z-20">
+                {/* Badges */}
+                <div className="absolute bottom-2 left-0 w-full px-2 flex justify-between items-end pointer-events-none z-20">
                      {product.discountPercent > 0 && (
-                        <div className="bg-red-600 text-white text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
+                        <div className="bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
                             {product.discountPercent}% OFF
                         </div>
                     )}
                      {product.saleTag && (
-                        <div className="ml-auto bg-brand-blue text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
+                        <div className="ml-auto bg-brand-blue text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
                             <SunIcon />
                             {product.saleTag}
                         </div>
@@ -390,20 +392,23 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                 </div>
             </div>
 
-            {/* Content Padding Increased to px-7 (narrower content width) */}
-            <div className="py-4 px-7 flex flex-col flex-grow relative z-10 bg-white">
-                <h3 className="font-bold text-sm sm:text-base md:text-lg mb-3 text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors line-clamp-2">{product.name}</h3>
-                
-                {/* Extra Info Section - Expanded Flush */}
+            {/* Content Wrapper: p-0 for compact control */}
+            <div className="flex flex-col flex-grow relative z-10 bg-white">
+                {/* Title */}
+                <div className="px-2 pt-2 mb-2">
+                     <h3 className="font-bold text-xs sm:text-sm mb-0.5 text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors truncate">{product.name}</h3>
+                </div>
+
+                {/* Extra Info Section - Mentok Kiri Kanan (w-full) with Jarak 2 (px-2) */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="mb-4 space-y-2 bg-gray-50 py-3 px-7 -mx-7 border-y border-gray-100">
+                    <div className="mb-2 space-y-1 bg-gray-50 py-1.5 px-2 w-full border-y border-gray-100">
                          {product.extraInfo.map((info, idx) => (
-                            <div key={idx} className="flex items-center gap-2.5 text-[10px] sm:text-xs md:text-sm text-gray-700">
-                                <div className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
+                            <div key={idx} className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-gray-700">
+                                <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
                                     {getExtraInfoIcon(info.iconType)}
                                 </div>
-                                <p className="flex-grow text-left leading-snug">
-                                    <span className="font-bold text-gray-800 uppercase tracking-tight mr-1">{info.label}:</span>
+                                <p className="flex-grow text-left leading-tight truncate">
+                                    <span className="font-bold text-gray-800 uppercase mr-1">{info.label}:</span>
                                     <span>{info.value}</span>
                                 </p>
                             </div>
@@ -411,11 +416,11 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                     </div>
                 )}
 
-                <div className="text-left relative pr-0 pt-2 mt-auto">
-                    <div className="flex flex-col mb-3">
-                        <div className="flex items-center justify-between min-h-[24px]">
+                <div className="text-left relative px-2 mt-auto">
+                    <div className="flex flex-col mb-2">
+                        <div className="flex items-center justify-between min-h-[20px]">
                             {product.originalPrice > product.discountedPrice ? (
-                                <span className="text-xs md:text-sm text-gray-400 line-through text-left">Rp{(product.originalPrice).toLocaleString('id-ID')}</span>
+                                <span className="text-[10px] text-gray-400 line-through text-left">Rp{(product.originalPrice).toLocaleString('id-ID')}</span>
                             ) : (
                                 <span></span>
                             )}
@@ -423,26 +428,27 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                              {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
                                  <button 
                                     onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-                                    className="w-9 h-9 p-2 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-brand-yellow text-gray-600 hover:text-brand-red transition-colors group/cart animate-ring-interval flex items-center justify-center"
+                                    className="w-7 h-7 p-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-brand-yellow text-gray-600 hover:text-brand-red transition-colors group/cart animate-ring-interval flex items-center justify-center"
                                     title="Tambah ke Keranjang"
                                 >
-                                    <div className="w-5 h-5 [&>svg]:w-full [&>svg]:h-full"><CartIcon /></div>
+                                    <div className="w-4 h-4 [&>svg]:w-full [&>svg]:h-full"><CartIcon /></div>
                                 </button>
                              )}
                         </div>
 
-                        <div className="flex items-center gap-1 sm:gap-2 mt-0.5">
-                             <p className="text-lg sm:text-xl md:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                             <p className="text-sm sm:text-base md:text-lg font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
                         </div>
                     </div>
 
                     {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
-                        <div className="relative">
-                            <div className="flex items-center justify-between gap-1 mb-1">
-                                <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden border border-gray-200">
+                         // Stock Bar: Aligned with Button (mx-2) by wrapping in same margin
+                        <div className="relative mb-2">
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden border border-gray-200">
                                     <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
                                 </div>
-                                <p className="text-[9px] md:text-[10px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
+                                <p className="text-[8px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
                             </div>
                         </div>
                     )}

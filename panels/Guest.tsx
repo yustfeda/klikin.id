@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { User } from '../types';
@@ -95,18 +96,19 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
         }
     };
 
-    const buttonBaseClass = "group w-[calc(100%-24px)] mx-3 mb-3 h-10 rounded-lg font-metropolis font-bold tracking-wide text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
+    // Adjusted button width to match stock bar alignment (mx-2)
+    const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
         const isClosed = product.isSaleClosed || product.stock === 0;
         
         if (product.isComingSoon && !isClosed) {
              return (
-                <div className="flex flex-col w-full">
+                <div className="flex flex-col w-full px-2 mb-2">
                     {product.releaseDate && <ProductCountdown targetDate={product.releaseDate} />}
-                    <div className={`${buttonBaseClass} bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
+                    <div className={`w-full h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex items-center justify-center gap-1.5 bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
                         <ClockIcon />
-                        <span className="mt-0.5 uppercase">Segera Hadir</span>
+                        <span className="uppercase">Segera Hadir</span>
                     </div>
                 </div>
             );
@@ -114,12 +116,12 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
         
         if (isClosed) {
             return (
-                <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[40px]`}>
+                <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
                         <span className="uppercase">Close</span>
                     </div>
-                    <span className="text-[9px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
+                    <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
@@ -128,7 +130,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
             <button onClick={() => onAction(product)} className={`${buttonBaseClass} bg-brand-red text-white border-b-2 border-red-800 hover:bg-red-700 hover:shadow-red-600/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
                 <span className="transform transition-transform duration-300 group-hover:translate-x-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                     </svg>
                 </span>
@@ -137,62 +139,71 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     return (
-        <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
-            {/* Image: Compact on Desktop with md:h-48 for 5-col grid */}
-            <div className="relative w-full h-48 sm:h-52 md:h-48 overflow-hidden">
+        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
+            {/* Image: Smaller on Desktop (md:h-36) for compact look */}
+            <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
-                            <span className="text-brand-red font-bold text-xs transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
+                            <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
                         </div>
                     </div>
                 )}
                 {product.isComingSoon && !product.isSaleClosed && product.stock > 0 && (
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
-                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md">
-                            <span className="text-brand-orange font-bold text-xs">SOON</span>
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
+                            <span className="text-brand-orange font-bold text-[10px]">SOON</span>
                         </div>
                     </div>
                 )}
 
                 {/* Badges */}
-                <div className="absolute bottom-3 left-0 w-full px-3 flex justify-between items-end pointer-events-none z-20">
+                <div className="absolute bottom-2 left-0 w-full px-2 flex justify-between items-end pointer-events-none z-20">
                      {product.discountPercent > 0 && (
-                        <div className="bg-red-600 text-white text-xs sm:text-sm font-extrabold px-2.5 py-1 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
+                        <div className="bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
                             {product.discountPercent}% OFF
                         </div>
                     )}
                      {product.saleTag && (
-                        <div className="ml-auto bg-brand-blue text-white text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
+                        <div className="ml-auto bg-brand-blue text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
                             <SunIcon />
                             {product.saleTag}
                         </div>
                     )}
                 </div>
                 
-                <div className="absolute top-3 left-3 z-20">
-                    <span className={`text-[10px] sm:text-xs px-2.5 py-1 rounded-full uppercase tracking-wider font-bold shadow-sm ${product.category === 'digital' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
+                <div className="absolute top-2 left-2 z-20">
+                    <span className={`text-[8px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold shadow-sm ${product.category === 'digital' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
                         {product.category === 'digital' ? 'Web / Digital' : 'Fisik'}
                     </span>
                 </div>
             </div>
 
-            {/* Content Padding Increased to px-7 */}
-            <div className="py-4 px-7 flex flex-col flex-grow relative z-10 bg-white">
-                <h3 className="font-bold text-sm sm:text-base md:text-lg mb-3 truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
+            {/* Content: Compact layout (p-0 wrapper) */}
+            <div className="flex flex-col flex-grow relative z-10 bg-white">
+                {/* Title & Price Section */}
+                <div className="pt-2 px-2 mb-2">
+                    <h3 className="font-bold text-xs sm:text-sm truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
+                    <div className="flex items-center gap-1 mt-1">
+                        {product.originalPrice > product.discountedPrice && (
+                            <span className="text-[10px] text-gray-400 line-through">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
+                        )}
+                        <p className="text-sm sm:text-base font-bold text-brand-red">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
+                    </div>
+                </div>
                 
-                {/* Extra Info - Expanded Flush */}
+                {/* Extra Info - Mentok Kiri Kanan (w-full) with Jarak 2 (px-2) */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="mb-4 space-y-2 bg-gray-50 py-3 px-7 -mx-7 border-y border-gray-100">
+                    <div className="mb-2 bg-gray-50 py-1.5 px-2 w-full border-y border-gray-100 space-y-1">
                         {product.extraInfo.map((info, idx) => (
-                            <div key={idx} className="flex items-center gap-2.5 text-[10px] sm:text-xs md:text-sm text-gray-700">
-                                <div className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
+                            <div key={idx} className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-gray-700">
+                                <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
                                     {getExtraInfoIcon(info.iconType)}
                                 </div>
-                                <p className="flex-grow text-left leading-snug">
-                                    <span className="font-bold text-gray-800 uppercase tracking-tight mr-1">{info.label}:</span>
+                                <p className="flex-grow text-left leading-tight truncate">
+                                    <span className="font-bold text-gray-800 uppercase mr-1">{info.label}:</span>
                                     <span>{info.value}</span>
                                 </p>
                             </div>
@@ -200,20 +211,16 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                     </div>
                 )}
 
-                <div className="text-left mt-auto pt-2">
-                    <div className="flex flex-col mb-3">
-                        {product.originalPrice > product.discountedPrice && (
-                            <span className="text-xs md:text-sm text-gray-400 line-through text-left">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
-                        )}
-                        <p className="text-lg sm:text-xl md:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
-                    </div>
-                    
+                <div className="mt-auto">
                     {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden border border-gray-200">
-                                <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
+                        // Stock Bar: Aligned with Button (mx-2)
+                        <div className="px-2 mb-2">
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden border border-gray-200">
+                                    <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
+                                </div>
+                                <p className="text-[8px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
                             </div>
-                            <p className="text-[9px] md:text-[10px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
                         </div>
                     )}
                 </div>
@@ -417,8 +424,9 @@ const GuestPanel: React.FC = () => {
 const GuestHome: React.FC<{ products: Product[], banner: string | null, onNavigateCatalog: () => void, onProductClick: (p: Product) => void, onAuthClick: (register: boolean) => void }> = ({ products, banner, onNavigateCatalog, onProductClick, onAuthClick }) => (
     <div className="text-center py-4 sm:py-8">
         {banner && (
+            // Reduced max-height on desktop for smaller banner (max-h-[140px])
             <div className="hidden md:block w-full max-w-3xl mx-auto mb-8 rounded-xl overflow-hidden shadow-xl border-2 border-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
-                <CachedImage src={banner} alt="Banner" className="w-full h-auto max-h-[200px] object-cover transition-transform duration-700 group-hover:scale-105" />
+                <CachedImage src={banner} alt="Banner" className="w-full h-auto max-h-[140px] object-cover transition-transform duration-700 group-hover:scale-105" />
             </div>
         )}
 
@@ -454,9 +462,9 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
         
          <div className="bg-white py-6 border-t border-gray-100">
              <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
-             {/* Updated Grid: 5 columns on XL screens */}
+             {/* Ensure 5 columns on XL desktop */}
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
-                {products.slice(0, 8).map(p => (
+                {products.slice(0, 5).map(p => (
                      <div key={p.id} className="transform origin-top">
                          <ProductCard product={p} onAction={onProductClick} />
                      </div>
@@ -470,7 +478,7 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
 const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => void }> = ({ products, onAction }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Produk</h2>
-        {/* Updated Grid: 5 columns on XL screens */}
+        {/* Ensure 5 columns on XL desktop */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                  <ProductCard key={p.id} product={p} onAction={onAction} />
