@@ -35,17 +35,11 @@ const CachedImage = ({ src, alt, className }: { src: string, alt: string, classN
 
 const Logo = () => (
     <h1 className="flex items-baseline select-none cursor-pointer group">
-        <img 
-            src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWQ5YjhzaWJuc3MxcHYxNmt6d3gwcHNjd2FoeXU1cHpheDJjdDR6biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/npyCJplcYPIXjWzwtp/giphy.gif" 
-            alt="K" 
-            className="h-6 w-auto sm:h-8 mr-1 transform translate-y-0.5" 
-        />
         <div className="flex items-baseline tracking-tighter gap-0.5">
-            {/* Removed drop-shadow as requested */}
             <span className="font-vanguard text-brand-orange text-2xl sm:text-3xl tracking-wide leading-none">
                 KELIK
             </span>
-            <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">
+            <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-xl tracking-wide leading-none">
                 in.com
             </span>
         </div>
@@ -574,6 +568,7 @@ const ManageSettings = () => {
 };
 
 const Overview = () => {
+    // ... (Overview component code unchanged) ...
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -869,7 +864,10 @@ const ManageProducts = () => {
 
     const formatDateTimeLocal = (timestamp?: number) => {
         if (!timestamp) return '';
-        return new Date(timestamp).toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+        const date = new Date(timestamp);
+        const pad = (n: number) => n < 10 ? '0' + n : n;
+        // Format YYYY-MM-DDTHH:mm
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     };
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -890,7 +888,6 @@ const ManageProducts = () => {
                 </button>
             </div>
             
-            {/* CHANGED: grid-cols-1 for mobile to match user request */}
             <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
                 {products.map(p => {
                      const totalUnits = p.totalSold + p.stock;

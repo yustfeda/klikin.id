@@ -51,17 +51,11 @@ const CachedImage = ({ src, alt, className }: { src: string, alt: string, classN
 
 const Logo = () => (
     <h1 className="flex items-baseline select-none cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
-        <img 
-            src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExeXQ5eDV3cmYxMjRicDhnOW92bGJtd29ycW14emgweDZhNGNuMXhhdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/UMYq4ZoUgCRpdWQlpH/giphy.gif" 
-            alt="K" 
-            className="h-6 w-auto sm:h-8 mr-1 transform translate-y-0.5" 
-        />
         <div className="flex items-baseline tracking-tighter gap-0.5">
-            {/* Removed drop-shadow */}
             <span className="font-vanguard text-brand-orange text-2xl sm:text-3xl tracking-wide leading-none">
                 KELIK
             </span>
-            <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">
+            <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-xl tracking-wide leading-none">
                 in.com
             </span>
         </div>
@@ -162,8 +156,10 @@ const ProductCountdown = ({ targetDate }: { targetDate: number }) => {
     if (!targetDate) return null;
 
     return (
-        <div className="text-center text-yellow-700 font-mono font-bold text-[10px] drop-shadow-sm mb-0.5">
-            {timeLeft}
+        <div className="bg-brand-yellow/20 px-2 py-0.5 rounded-md inline-block border border-brand-yellow/50 shadow-sm transform translate-y-1">
+            <div className="text-center text-yellow-800 font-bold text-[10px] tracking-tight leading-none">
+                {timeLeft}
+            </div>
         </div>
     );
 };
@@ -316,11 +312,13 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
         
         if (product.isComingSoon && !isClosed) {
              return (
-                <div className="flex flex-col w-full">
-                    {product.releaseDate && <ProductCountdown targetDate={product.releaseDate} />}
-                    <div className={`${buttonBaseClass} bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
+                <div className="flex flex-col w-full px-3 mb-3 mt-auto">
+                     <div className="flex justify-center mb-1">
+                        {product.releaseDate && <ProductCountdown targetDate={product.releaseDate} />}
+                    </div>
+                    <div className={`w-full h-10 rounded-lg font-metropolis font-bold tracking-wide text-xs shadow-sm flex items-center justify-center gap-1.5 bg-yellow-100 text-yellow-800 border border-yellow-200 cursor-not-allowed`}>
                         <ClockIcon />
-                        <span className="mt-0.5 uppercase">Segera Hadir</span>
+                        <span className="uppercase">Segera Hadir</span>
                     </div>
                 </div>
             );
@@ -350,9 +348,9 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
     };
 
     return (
-        <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[88%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
-             {/* Image Container: Increased height h-44/h-52 */}
-             <div className="relative w-full h-44 sm:h-52 overflow-hidden">
+        <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
+             {/* Image Container: Wider on Desktop with md:h-64 */}
+             <div className="relative w-full h-48 sm:h-52 md:h-64 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
@@ -414,7 +412,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                     </div>
                 )}
 
-                <div className="text-left relative pr-0 mt-auto pt-2">
+                <div className="text-left relative pr-0 pt-2 mt-auto">
                     <div className="flex flex-col mb-3">
                         <div className="flex items-center justify-between min-h-[24px]">
                             {product.originalPrice > product.discountedPrice ? (
@@ -839,7 +837,9 @@ Mohon diproses. Terima kasih!`;
     );
 };
 
+// ... rest of existing components (UserInbox, UserHome, UserProducts, UserCart, UserPayment, UserOrders, UserProfile)
 const UserInbox: React.FC<{ messages: Message[] }> = ({ messages }) => {
+    // ... UserInbox implementation remains same
     const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
 
     const openWhatsapp = () => {
@@ -935,9 +935,7 @@ const UserHome: React.FC<{
                     hi, <span className="text-brand-red font-bold">{auth.currentUser?.username}</span>
                 </h2>
                 
-                {/* Updated: Small Status Cards (Horizontal, Compact, Pulsing) */}
                 <div className="flex flex-row flex-wrap justify-center gap-2 mb-6">
-                    {/* Pending Payment Card - ALWAYS VISIBLE */}
                     {pendingCount > 0 && (
                         <div onClick={onGoToPayment} className="bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-yellow-100 transition-all flex items-center gap-2 shadow-sm group min-w-[120px]">
                             <div className="w-5 h-5 bg-yellow-200 text-yellow-700 rounded-full flex items-center justify-center animate-pulse shadow-inner">
@@ -950,7 +948,6 @@ const UserHome: React.FC<{
                         </div>
                     )}
 
-                    {/* Processed/Active Card - EPHEMERAL (5s) */}
                     {processCount > 0 && showTempStatus && (
                         <div onClick={onGoToOrders} className="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1.5 cursor-pointer hover:bg-blue-100 transition-all flex items-center gap-2 shadow-sm group min-w-[120px] animate-fade-out">
                             <div className="w-5 h-5 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center animate-pulse shadow-inner">
@@ -963,7 +960,6 @@ const UserHome: React.FC<{
                         </div>
                     )}
 
-                    {/* Cancelled Card - EPHEMERAL (5s) */}
                     {cancelCount > 0 && showTempStatus && (
                          <div className="bg-red-50 border border-red-200 rounded-lg px-2 py-1.5 flex items-center gap-2 shadow-sm opacity-80 min-w-[120px] animate-fade-out">
                             <div className="w-5 h-5 bg-red-200 text-red-700 rounded-full flex items-center justify-center shadow-inner">
@@ -988,8 +984,8 @@ const UserHome: React.FC<{
                 </button>
             </div>
              <h3 className="text-sm font-bold mb-4 text-gray-800 text-left pl-2 border-l-4 border-brand-orange">Rekomendasi Untuk Anda</h3>
-             {/* CHANGED: Mobile grid-cols-1, Desktop grid-cols-3/4/5 */}
-             <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 mb-8 items-start">
+             {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-8 items-start">
                 {products.slice(0, 5).map(p => (
                     <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
                 ))}
@@ -1001,8 +997,8 @@ const UserHome: React.FC<{
 const UserProducts: React.FC<{ products: Product[], onAddToCart: (p: Product) => void, onBuy: (p: Product) => void }> = ({ products, onAddToCart, onBuy }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Lengkap</h2>
-        {/* CHANGED: Mobile grid-cols-1, Desktop grid-cols-3/4/5/6 */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 items-start">
+        {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 items-start">
             {products.map(p => (
                  <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
             ))}
@@ -1011,6 +1007,7 @@ const UserProducts: React.FC<{ products: Product[], onAddToCart: (p: Product) =>
 );
 
 const UserCart: React.FC<{ cart: {product: Product, quantity: number}[], onRemove: (id: string) => void, onBuy: (p: Product, qty: number) => void }> = ({ cart, onRemove, onBuy }) => (
+    // ... UserCart implementation remains same
     <div className="py-2 max-w-2xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><CartIcon /> Keranjang Belanja</h2>
         {cart.length === 0 ? (
@@ -1029,6 +1026,7 @@ const UserCart: React.FC<{ cart: {product: Product, quantity: number}[], onRemov
 );
 
 const UserPayment = () => {
+    // ... UserPayment implementation remains same
     const [orders, setOrders] = useState<Order[]>([]);
     const [cancelId, setCancelId] = useState<string | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -1136,6 +1134,7 @@ const UserPayment = () => {
 };
 
 const UserOrders = () => {
+    // ... UserOrders implementation remains same
     const [orders, setOrders] = useState<Order[]>([]);
     const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -1386,6 +1385,7 @@ const UserOrders = () => {
 };
 
 const UserProfile = () => {
+    // ... UserProfile implementation remains same
     const auth = useAuth();
     const [formData, setFormData] = useState({ username: auth.currentUser?.username || '', email: auth.currentUser?.email || '' });
 

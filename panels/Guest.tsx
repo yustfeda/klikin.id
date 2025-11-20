@@ -71,7 +71,7 @@ const ProductCountdown = ({ targetDate }: { targetDate: number }) => {
     if (!targetDate) return null;
 
     return (
-        <div className="text-center text-yellow-700 font-mono font-bold text-[10px] drop-shadow-sm mb-0.5">
+        <div className="text-center text-yellow-700 font-bold text-[10px] drop-shadow-sm mb-0.5">
             {timeLeft}
         </div>
     );
@@ -138,9 +138,9 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     return (
-        <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[88%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
-            {/* Image: Increased Height to h-44/h-52 */}
-            <div className="relative w-full h-44 sm:h-52 overflow-hidden">
+        <div className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
+            {/* Image: Increased Height for desktop (md:h-64) */}
+            <div className="relative w-full h-48 sm:h-52 md:h-64 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
@@ -226,17 +226,12 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
 
 const Logo = () => (
     <h1 className="flex items-baseline select-none cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
-        <img 
-            src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWQ5YjhzaWJuc3MxcHYxNmt6d3gwcHNjd2FoeXU1cHpheDJjdDR6biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/npyCJplcYPIXjWzwtp/giphy.gif" 
-            alt="K" 
-            className="h-6 w-auto sm:h-8 mr-1 transform translate-y-0.5" 
-        />
         <div className="flex items-baseline tracking-tighter gap-0.5">
              {/* Removed drop-shadow */}
             <span className="font-vanguard text-brand-orange text-2xl sm:text-3xl tracking-wide leading-none">
                 KELIK
             </span>
-            <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">
+            <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-xl tracking-wide leading-none">
                 in.com
             </span>
         </div>
@@ -434,7 +429,7 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
                     selamat datang di
                 </span>
                 <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
-                    {/* Removed drop-shadow */}
+                     {/* Removed drop-shadow */}
                     <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-5xl tracking-wide leading-none">
                         KELIK
                     </span>
@@ -460,8 +455,8 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
         
          <div className="bg-white py-6 border-t border-gray-100">
              <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
-             {/* CHANGED: Mobile grid-cols-1, Desktop grid-cols-3/4 */}
-             <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 px-2 max-w-7xl mx-auto items-start">
+             {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 px-2 max-w-7xl mx-auto items-start">
                 {products.slice(0, 8).map(p => (
                      <div key={p.id} className="transform origin-top">
                          <ProductCard product={p} onAction={onProductClick} />
@@ -476,8 +471,8 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
 const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => void }> = ({ products, onAction }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Produk</h2>
-        {/* CHANGED: Mobile grid-cols-1, Desktop grid-cols-3/4 */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
+        {/* Updated Grid: Wider on Desktop (grid-cols-3 lg, grid-cols-4 xl) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 items-start">
             {products.map(p => (
                  <ProductCard key={p.id} product={p} onAction={onAction} />
             ))}
@@ -486,6 +481,7 @@ const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => vo
 );
 
 const GuestInfo: React.FC = () => {
+    // ... GuestInfo implementation remains same
     const faqs = [
         { q: "Apa itu KELIKin.com?", a: "KELIKin.com adalah toko unik yang menjual dan menerima pesanan barang fisik (karya seni, kerajinan) serta produk non-fisik seperti Website (Web Online)." },
         { q: "Bagaimana cara memesan?", a: "Silahkan login atau daftar akun terlebih dahulu. Pilih produk yang anda inginkan, masukkan ke keranjang, dan lakukan checkout." },
@@ -561,6 +557,7 @@ const GuestInfo: React.FC = () => {
 };
 
 const LoginRegister: React.FC<{ isRegister: boolean, setIsRegister: (v: boolean) => void, close: () => void }> = ({ isRegister, setIsRegister, close }) => {
+    // ... LoginRegister implementation remains same
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
@@ -590,10 +587,24 @@ const LoginRegister: React.FC<{ isRegister: boolean, setIsRegister: (v: boolean)
 
     return (
         <div className="p-5">
-             <div className="text-center mb-4">
+            <div className="text-center mb-4">
                 <h3 className="text-xl font-bold text-gray-800 mb-1">{isRegister ? 'Buat Akun' : 'Selamat Datang'}</h3>
                 <p className="text-[10px] text-gray-500">{isRegister ? 'Isi data diri anda untuk mendaftar' : 'Silahkan login untuk melanjutkan'}</p>
             </div>
+
+             {/* Small Logo below Welcome Text */}
+             <div className="flex justify-center mb-4">
+                <div className="flex items-baseline select-none">
+                    <div className="flex items-baseline tracking-tighter gap-0.5">
+                        <span className="font-vanguard text-brand-orange text-xl tracking-wide leading-none">
+                            KELIK
+                        </span>
+                        <span className="font-aerion font-bold italic text-brand-blue text-sm tracking-wide drop-shadow-[0_1px_1px_rgba(0,0,0,0.2)] leading-none">
+                            in.com
+                        </span>
+                    </div>
+                </div>
+             </div>
             
             {error && <div className="bg-red-50 text-red-600 p-2 rounded-lg text-[10px] mb-3 text-center">{error}</div>}
 
