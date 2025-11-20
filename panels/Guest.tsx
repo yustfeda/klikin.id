@@ -97,14 +97,14 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     // Adjusted button width to match stock bar alignment (mx-2)
-    const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
+    const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
         const isClosed = product.isSaleClosed || product.stock === 0;
         
         if (product.isComingSoon && !isClosed) {
              return (
-                <div className="flex flex-col w-full px-2 mb-2">
+                <div className="flex flex-col w-full px-2 mb-4">
                     {product.releaseDate && <ProductCountdown targetDate={product.releaseDate} />}
                     <div className={`w-full h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex items-center justify-center gap-1.5 bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
                         <ClockIcon />
@@ -139,7 +139,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     return (
-        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[95%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
+        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
             {/* Image: Smaller on Desktop (md:h-36) for compact look */}
             <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -183,22 +183,16 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
 
             {/* Content: Compact layout (p-0 wrapper) */}
             <div className="flex flex-col flex-grow relative z-10 bg-white">
-                {/* Title & Price Section */}
-                <div className="pt-2 px-2 mb-2">
-                    <h3 className="font-bold text-xs sm:text-sm truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
-                    <div className="flex items-center gap-1 mt-1">
-                        {product.originalPrice > product.discountedPrice && (
-                            <span className="text-[10px] text-gray-400 line-through">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
-                        )}
-                        <p className="text-sm sm:text-base font-bold text-brand-red">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
-                    </div>
+                {/* Title */}
+                <div className="pt-2 px-2 mb-4">
+                    <h3 className="font-bold text-lg sm:text-xl truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
                 </div>
                 
-                {/* Extra Info - Mentok Kiri Kanan (w-full) with Jarak 2 (px-2) */}
+                {/* Extra Info - mx-2 spacing, my-4 vertical spacing */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="mb-2 bg-gray-50 py-1.5 px-2 w-full border-y border-gray-100 space-y-1">
+                    <div className="my-4 bg-gray-50 py-1 px-2 mx-2 rounded border border-gray-100 space-y-1">
                         {product.extraInfo.map((info, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-gray-700">
+                            <div key={idx} className="flex items-center gap-1.5 text-[9px] text-gray-700">
                                 <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
                                     {getExtraInfoIcon(info.iconType)}
                                 </div>
@@ -211,15 +205,24 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                     </div>
                 )}
 
-                <div className="mt-auto">
+                <div className="mt-auto px-2">
+                     {/* Prices - Left Aligned */}
+                    <div className="mb-4 text-left">
+                         {/* Original Price (Strikethrough) */}
+                        {product.originalPrice > product.discountedPrice && (
+                            <span className="text-[10px] text-gray-400 line-through block mb-0.5 text-left">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
+                        )}
+                        <p className="text-sm sm:text-base font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
+                    </div>
+
+                    {/* Stock Bar */}
                     {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
-                        // Stock Bar: Aligned with Button (mx-2)
-                        <div className="px-2 mb-2">
-                            <div className="flex items-center justify-between gap-1 mb-0.5">
-                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden border border-gray-200">
+                        <div className="mb-4">
+                             <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden border border-gray-200">
                                     <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
                                 </div>
-                                <p className="text-[8px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
+                                <p className="text-xs text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
                             </div>
                         </div>
                     )}
