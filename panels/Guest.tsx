@@ -181,13 +181,13 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
 
             {/* Content Padding Increased to px-7 */}
             <div className="py-4 px-7 flex flex-col flex-grow relative z-10 bg-white">
-                <h3 className="font-bold text-sm sm:text-base mb-3 truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
+                <h3 className="font-bold text-sm sm:text-base md:text-lg mb-3 truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
                 
-                {/* Extra Info - Expanded */}
+                {/* Extra Info - Expanded Flush */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="mb-4 space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <div className="mb-4 space-y-2 bg-gray-50 py-3 px-7 -mx-7 border-y border-gray-100">
                         {product.extraInfo.map((info, idx) => (
-                            <div key={idx} className="flex items-center gap-2.5 text-[10px] sm:text-xs text-gray-700">
+                            <div key={idx} className="flex items-center gap-2.5 text-[10px] sm:text-xs md:text-sm text-gray-700">
                                 <div className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
                                     {getExtraInfoIcon(info.iconType)}
                                 </div>
@@ -203,9 +203,9 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                 <div className="text-left mt-auto pt-2">
                     <div className="flex flex-col mb-3">
                         {product.originalPrice > product.discountedPrice && (
-                            <span className="text-xs text-gray-400 line-through text-left">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
+                            <span className="text-xs md:text-sm text-gray-400 line-through text-left">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
                         )}
-                        <p className="text-lg sm:text-xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
+                        <p className="text-lg sm:text-xl md:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
                     </div>
                     
                     {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
@@ -213,7 +213,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                             <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden border border-gray-200">
                                 <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
                             </div>
-                            <p className="text-[9px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
+                            <p className="text-[9px] md:text-[10px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
                         </div>
                     )}
                 </div>
@@ -417,8 +417,8 @@ const GuestPanel: React.FC = () => {
 const GuestHome: React.FC<{ products: Product[], banner: string | null, onNavigateCatalog: () => void, onProductClick: (p: Product) => void, onAuthClick: (register: boolean) => void }> = ({ products, banner, onNavigateCatalog, onProductClick, onAuthClick }) => (
     <div className="text-center py-4 sm:py-8">
         {banner && (
-            <div className="hidden md:block w-full max-w-4xl mx-auto mb-8 rounded-xl overflow-hidden shadow-xl border-2 border-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
-                <CachedImage src={banner} alt="Banner" className="w-full h-auto max-h-[250px] object-cover transition-transform duration-700 group-hover:scale-105" />
+            <div className="hidden md:block w-full max-w-3xl mx-auto mb-8 rounded-xl overflow-hidden shadow-xl border-2 border-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
+                <CachedImage src={banner} alt="Banner" className="w-full h-auto max-h-[200px] object-cover transition-transform duration-700 group-hover:scale-105" />
             </div>
         )}
 
@@ -455,7 +455,7 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
          <div className="bg-white py-6 border-t border-gray-100">
              <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
              {/* Updated Grid: 5 columns on XL screens */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 px-2 max-w-7xl mx-auto items-start">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
                 {products.slice(0, 8).map(p => (
                      <div key={p.id} className="transform origin-top">
                          <ProductCard product={p} onAction={onProductClick} />
@@ -471,7 +471,7 @@ const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => vo
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Produk</h2>
         {/* Updated Grid: 5 columns on XL screens */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                  <ProductCard key={p.id} product={p} onAction={onAction} />
             ))}

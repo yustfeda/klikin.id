@@ -392,13 +392,13 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
 
             {/* Content Padding Increased to px-7 (narrower content width) */}
             <div className="py-4 px-7 flex flex-col flex-grow relative z-10 bg-white">
-                <h3 className="font-bold text-sm sm:text-base mb-3 text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors line-clamp-2">{product.name}</h3>
+                <h3 className="font-bold text-sm sm:text-base md:text-lg mb-3 text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors line-clamp-2">{product.name}</h3>
                 
-                {/* Extra Info Section - Expanded */}
+                {/* Extra Info Section - Expanded Flush */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="mb-4 space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <div className="mb-4 space-y-2 bg-gray-50 py-3 px-7 -mx-7 border-y border-gray-100">
                          {product.extraInfo.map((info, idx) => (
-                            <div key={idx} className="flex items-center gap-2.5 text-[10px] sm:text-xs text-gray-700">
+                            <div key={idx} className="flex items-center gap-2.5 text-[10px] sm:text-xs md:text-sm text-gray-700">
                                 <div className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
                                     {getExtraInfoIcon(info.iconType)}
                                 </div>
@@ -415,7 +415,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                     <div className="flex flex-col mb-3">
                         <div className="flex items-center justify-between min-h-[24px]">
                             {product.originalPrice > product.discountedPrice ? (
-                                <span className="text-xs text-gray-400 line-through text-left">Rp{(product.originalPrice).toLocaleString('id-ID')}</span>
+                                <span className="text-xs md:text-sm text-gray-400 line-through text-left">Rp{(product.originalPrice).toLocaleString('id-ID')}</span>
                             ) : (
                                 <span></span>
                             )}
@@ -432,7 +432,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                         </div>
 
                         <div className="flex items-center gap-1 sm:gap-2 mt-0.5">
-                             <p className="text-lg sm:text-xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
+                             <p className="text-lg sm:text-xl md:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
                         </div>
                     </div>
 
@@ -442,7 +442,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                                 <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden border border-gray-200">
                                     <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
                                 </div>
-                                <p className="text-[9px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
+                                <p className="text-[9px] md:text-[10px] text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
                             </div>
                         </div>
                     )}
@@ -984,7 +984,7 @@ const UserHome: React.FC<{
             </div>
              <h3 className="text-sm font-bold mb-4 text-gray-800 text-left pl-2 border-l-4 border-brand-orange">Rekomendasi Untuk Anda</h3>
              {/* Updated Grid: 5 columns on XL screens */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 mb-8 items-start">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
                 {products.slice(0, 5).map(p => (
                     <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
                 ))}
@@ -997,7 +997,7 @@ const UserProducts: React.FC<{ products: Product[], onAddToCart: (p: Product) =>
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Lengkap</h2>
         {/* Updated Grid: 5 columns on XL screens */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                  <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
             ))}
