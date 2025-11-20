@@ -1,0 +1,102 @@
+/* Gaya Umum */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #343a40;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Tinggi penuh viewport */
+    overflow: hidden; /* Mencegah scroll jika elemen melebihi viewport */
+}
+
+/* Kontainer Utama */
+.error-container {
+    text-align: center;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 90%; /* Menyesuaikan hampir seluruh body */
+    max-width: 600px; /* Batas maksimal */
+    animation: float 2s infinite ease-in-out, bounce-in 0.8s ease-out;
+}
+
+/* GIF Responsif */
+.responsive-gif {
+    width: 50%; /* Menyesuaikan ukuran menjadi 50% dari kontainer */
+    height: auto; /* Proporsi tinggi sesuai lebar */
+    max-width: 300px; /* Batas maksimal lebar */
+    border-radius: 10px; /* Sudut membulat untuk estetika */
+    margin: 20px auto; /* Memberikan jarak dengan elemen lain */
+    display: block; /* Memastikan GIF berada di tengah */
+    border-image: 50px;
+}
+
+/* Efek Mengambang */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Efek Bounce-In */
+@keyframes bounce-in {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Gaya Teks */
+.error-code {
+    font-size: 48px;
+    font-weight: bold;
+    color: #dc3545;
+}
+
+.error-message {
+    font-size: 20px;
+    margin: 10px 0;
+}
+
+.error-description {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+/* Tombol */
+.button {
+    margin-top: 20px;
+}
+
+.button a {
+    text-decoration: none;
+    color: #ffffff;
+    background: #007bff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.button a:hover {
+    background: #0056b3;
+}
+
+
+
+
+  

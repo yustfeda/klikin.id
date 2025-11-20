@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KELIKin.com</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Exo+2:ital,wght@0,700;0,800;1,700&family=Montserrat:wght@500;700;800;900&family=Oswald:wght@400;500;700&family=Russo+One&family=Teko:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+                'bebas': ['"Bebas Neue"', 'sans-serif'],
+                'teko': ['"Teko"', 'sans-serif'],
+                'vanguard': ['"Russo One"', 'sans-serif'], // Mapping for Vanguard
+                'aerion': ['"Exo 2"', 'sans-serif'], // Mapping for Aerion
+                'monument': ['"Archivo Black"', 'sans-serif'], // Mapping for Monument Extended
+                'metropolis': ['"Montserrat"', 'sans-serif'], // Mapping for Metropolis (Closest Google Font)
+                'oswald': ['"Oswald"', 'sans-serif'],
+            },
+            colors: {
+              'brand-yellow': '#FFD700',
+              'brand-orange': '#FF8C00', 
+              'brand-red': '#8B0000',
+              'brand-blue': '#2563eb',
+            },
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+              'fade-out': 'fadeOut 0.5s ease-in-out',
+              'ring-interval': 'ring-interval 5s ease-in-out infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              fadeOut: {
+                '0%': { opacity: '1' },
+                '100%': { opacity: '0' },
+              },
+              'ring-interval': {
+                '0%, 90%': { transform: 'rotate(0)' },
+                '91%': { transform: 'rotate(15deg)' },
+                '93%': { transform: 'rotate(-15deg)' },
+                '95%': { transform: 'rotate(15deg)' },
+                '97%': { transform: 'rotate(-15deg)' },
+                '100%': { transform: 'rotate(0)' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Force scrollbar to prevent layout shift and ensure visibility */
+      html {
+        overflow-y: scroll; 
+      }
+      
+      /* Custom Scrollbar Styling */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f3f4f6;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 5px;
+        border: 2px solid #f3f4f6;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f3f4f6;
+      }
+      
+      body {
+          overflow-x: hidden; /* Prevent horizontal scroll from animations */
+      }
+      
+      /* Smooth transition for all interactive elements */
+      a, button, div {
+          transition-property: all;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          transition-duration: 300ms;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+    "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
+    "jspdf": "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/+esm",
+    "html2canvas": "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-50 text-gray-800 font-sans selection:bg-brand-orange/30">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
