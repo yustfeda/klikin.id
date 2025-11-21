@@ -905,7 +905,8 @@ const ManageProducts = () => {
             wholesalePercent: product.wholesalePercent || 2,
             releaseDate: product.releaseDate || 0,
             isSaleClosed: product.isSaleClosed || false,
-            isComingSoon: product.isComingSoon || false
+            isComingSoon: product.isComingSoon || false,
+            stock: product.stock || 0
         });
         setEditId(product.id);
         setIsEditing(true);
@@ -915,7 +916,7 @@ const ManageProducts = () => {
         setForm({
             name: '', imageUrl: '', originalPrice: 0, discountedPrice: 0, discountPercent: 0, 
             saleTag: '', stock: 0, isSaleClosed: false, isComingSoon: false, totalSold: 0, extraInfo: [], buyLink: '', category: 'physical',
-            hasCustomMessage: false, customMessage: '', enableWholesale: false, wholesaleMinQty: 10, wholesalePercent: 2, releaseDate: undefined
+            hasCustomMessage: false, customMessage: '', enableWholesale: false, wholesaleMinQty: 10, wholesalePercent: 2, releaseDate: 0
         });
         setEditId(null);
         setIsEditing(true);
@@ -1012,7 +1013,7 @@ const ManageProducts = () => {
         if (dateVal) {
             setForm({ ...form, releaseDate: new Date(dateVal).getTime() });
         } else {
-            setForm({ ...form, releaseDate: undefined });
+            setForm({ ...form, releaseDate: 0 });
         }
     };
 
@@ -1039,9 +1040,16 @@ const ManageProducts = () => {
                                     <button onClick={() => setDeleteConfirmId(p.id)} className="bg-white/90 p-1 rounded-full text-gray-700 hover:text-red-600 shadow transform hover:scale-110 transition-transform"><TrashIcon /></button>
                                 </div>
                                 {(p.isSaleClosed || p.stock === 0) && (
-                                    <div className="absolute inset-0 bg-blue-200/50 flex items-center justify-center z-10">
+                                    <div className="absolute inset-0 bg-gray-800/70 flex items-center justify-center z-10">
                                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center shadow-md">
-                                            <span className="text-brand-red font-bold text-[8px]">HABIS!</span>
+                                            <LockIcon />
+                                        </div>
+                                    </div>
+                                )}
+                                {(!p.isSaleClosed && p.isComingSoon) && (
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+                                            <span className="text-brand-orange font-bold text-[8px]">SOON</span>
                                         </div>
                                     </div>
                                 )}

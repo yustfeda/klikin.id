@@ -279,44 +279,16 @@ const SwipeableCartItem: React.FC<{ item: {product: Product, quantity: number}, 
 };
 
 const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCart: () => void }> = ({ product, onBuy, onAddToCart }) => {
-    // Determine if product is released based on coming soon flag and date
-    const [isReleased, setIsReleased] = useState(() => {
-         if (!product.isComingSoon) return true;
-         if ((product.releaseDate || 0) <= 0) return false; // Coming soon but no date -> Not released
-         return Date.now() >= product.releaseDate!; // Date passed -> Released
-    });
-
-    useEffect(() => {
-         const check = () => {
-             if (!product.isComingSoon) return true;
-             if ((product.releaseDate || 0) <= 0) return false;
-             return Date.now() >= product.releaseDate!;
-         };
-         setIsReleased(check());
-
-         if (product.isComingSoon && (product.releaseDate || 0) > 0) {
-             const diff = product.releaseDate! - Date.now();
-             if (diff > 0) {
-                 const timer = setTimeout(() => setIsReleased(true), diff);
-                 return () => clearTimeout(timer);
-             }
-         }
-    }, [product.isComingSoon, product.releaseDate]);
-
     const sold = product.totalSold;
     const remaining = product.stock;
     const stockText = `${sold} / ${remaining}`;
     const total = sold + remaining;
     const barWidth = total > 0 ? (sold / total) * 100 : 0;
     
-    // Priority logic:
-    // 1. Admin sets "Sale Closed" -> Closed (Gray)
-    // 2. Admin sets "Coming Soon" AND not released -> Coming Soon (Yellow), even if stock is 0
-    // 3. Stock is 0 -> Out of Stock (Gray)
-    // 4. Else -> Buy
-    const isClosed = product.isSaleClosed;
-    const effectivelyComingSoon = product.isComingSoon && !isReleased; 
-    const isOutOfStock = product.stock === 0;
+    // Priority Logic: Close > Coming Soon > Stock 0 > Buy
+    const isClosed = product.isSaleClosed; 
+    const isComingSoon = product.isComingSoon;
+    const isOutOfStock = product.stock <= 0;
 
     const getExtraInfoIcon = (type?: string) => {
         switch(type) {
@@ -334,21 +306,21 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
     const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 md:mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
-        // 1. Manual Close by Admin (Highest Priority)
+        // Priority 1: Manual Close by Admin
         if (isClosed) {
              return (
                 <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
-                        <span className="uppercase">Close</span>
+                        <span className="uppercase">CLOSE</span>
                     </div>
                     <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
 
-        // 2. Coming Soon (Overrides Stock 0)
-        if (effectivelyComingSoon) {
+        // Priority 2: Coming Soon (Admin Setting overrides Stock 0 if set)
+        if (isComingSoon) {
              return (
                 <div className={`${buttonBaseClass} bg-yellow-400 text-gray-900 border-b-2 border-yellow-600 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1.5 leading-none mt-1">
@@ -364,20 +336,20 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
             );
         }
         
-        // 3. Out of Stock (If not closed and not coming soon)
+        // Priority 3: Out of Stock (System Close)
         if (isOutOfStock) {
              return (
                 <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
-                        <span className="uppercase">Habis</span>
+                        <span className="uppercase">HABIS</span>
                     </div>
                     <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
 
-        // 4. Buy Now
+        // Priority 4: Buy Now
         return (
              <button onClick={onBuy} className={`${buttonBaseClass} bg-blue-400 text-white border-b-2 border-blue-500 hover:bg-blue-500 hover:shadow-blue-400/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
@@ -400,11 +372,11 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                 {/* Overlays Logic */}
                 {isClosed ? (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
-                            <LockIcon />
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
+                             <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
                         </div>
                     </div>
-                ) : effectivelyComingSoon ? (
+                ) : isComingSoon ? (
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
                             <span className="text-brand-orange font-bold text-[10px]">SOON</span>
@@ -472,7 +444,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                         <div className="flex items-center justify-between min-h-[24px]">
                              <p className="text-xl sm:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
 
-                             {!isClosed && !effectivelyComingSoon && !isOutOfStock && (
+                             {!isClosed && !isComingSoon && !isOutOfStock && (
                                  <button 
                                     onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
                                     className="w-8 h-8 p-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-brand-yellow text-gray-600 hover:text-brand-red transition-colors group/cart animate-ring-interval flex items-center justify-center"
@@ -484,7 +456,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                         </div>
                     </div>
 
-                    {!isClosed && !effectivelyComingSoon && product.stock > 0 && (
+                    {!isClosed && !isComingSoon && product.stock > 0 && (
                          // Stock Bar: h-2 (mobile), sm:h-1.5 (desktop)
                         <div className="relative mb-6 md:mb-3">
                             <div className="flex items-center justify-between gap-1 mb-1">

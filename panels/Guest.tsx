@@ -100,43 +100,16 @@ const ProductCountdown = ({ targetDate }: { targetDate: number }) => {
 };
 
 const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => void }> = ({ product, onAction }) => {
-    const [isReleased, setIsReleased] = useState(() => {
-         if (!product.isComingSoon) return true;
-         if ((product.releaseDate || 0) <= 0) return false;
-         return Date.now() >= product.releaseDate!;
-    });
-
-    useEffect(() => {
-         const check = () => {
-             if (!product.isComingSoon) return true;
-             if ((product.releaseDate || 0) <= 0) return false;
-             return Date.now() >= product.releaseDate!;
-         };
-         setIsReleased(check());
-
-         if (product.isComingSoon && (product.releaseDate || 0) > 0) {
-             const diff = product.releaseDate! - Date.now();
-             if (diff > 0) {
-                 const timer = setTimeout(() => setIsReleased(true), diff);
-                 return () => clearTimeout(timer);
-             }
-         }
-    }, [product.isComingSoon, product.releaseDate]);
-
     const sold = product.totalSold;
     const remaining = product.stock;
     const stockText = `${sold} / ${remaining}`;
     const total = sold + remaining;
     const barWidth = total > 0 ? (sold / total) * 100 : 0;
     
-    // Priority logic:
-    // 1. Admin sets "Sale Closed" -> Closed (Gray)
-    // 2. Admin sets "Coming Soon" AND not released -> Coming Soon (Yellow), even if stock is 0
-    // 3. Stock is 0 -> Out of Stock (Gray)
-    // 4. Else -> Buy
+    // Priority Logic: Close > Coming Soon > Stock 0 > Buy
     const isClosed = product.isSaleClosed;
-    const effectivelyComingSoon = product.isComingSoon && !isReleased;
-    const isOutOfStock = product.stock === 0;
+    const isComingSoon = product.isComingSoon;
+    const isOutOfStock = product.stock <= 0;
 
     const getExtraInfoIcon = (type?: string) => {
         switch(type) {
@@ -154,21 +127,21 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 md:mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
-        // 1. Manual Close (Priority 1)
+        // Priority 1: Manual Close by Admin
         if (isClosed) {
             return (
                 <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
-                        <span className="uppercase">Close</span>
+                        <span className="uppercase">CLOSE</span>
                     </div>
                     <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
 
-        // 2. Coming Soon (Priority 2 - overrides stock 0)
-        if (effectivelyComingSoon) {
+        // Priority 2: Coming Soon (Admin Setting overrides Stock 0)
+        if (isComingSoon) {
              return (
                 <div className={`${buttonBaseClass} bg-yellow-400 text-gray-900 border-b-2 border-yellow-600 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1.5 leading-none mt-1">
@@ -184,20 +157,20 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
             );
         }
         
-        // 3. Out of Stock (Priority 3)
+        // Priority 3: Out of Stock (System Close)
         if (isOutOfStock) {
             return (
                 <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
-                        <span className="uppercase">Habis</span>
+                        <span className="uppercase">HABIS</span>
                     </div>
                     <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
         
-        // 4. Buy Action (Priority 4)
+        // Priority 4: Buy Action
         return (
             <button onClick={() => onAction(product)} className={`${buttonBaseClass} bg-brand-red text-white border-b-2 border-red-800 hover:bg-red-700 hover:shadow-red-600/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
@@ -219,11 +192,11 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                 {/* Overlays Logic */}
                 {isClosed ? (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
-                            <LockIcon />
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
+                             <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
                         </div>
                     </div>
-                ) : effectivelyComingSoon ? (
+                ) : isComingSoon ? (
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
                             <span className="text-brand-orange font-bold text-[10px]">SOON</span>
@@ -292,7 +265,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                     </div>
 
                     {/* Stock Bar: h-2 mobile, h-1.5 desktop */}
-                    {!isClosed && !effectivelyComingSoon && product.stock > 0 && (
+                    {!isClosed && !isComingSoon && product.stock > 0 && (
                         <div className="mb-6 md:mb-3">
                              <div className="flex items-center justify-between gap-1 mb-1">
                                 <div className="w-full bg-gray-100 rounded-full h-2 sm:h-1.5 overflow-hidden border border-gray-200">
