@@ -493,7 +493,7 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
         <div className="max-w-3xl mx-auto mb-8">
             <div className="flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-1.5 mb-4">
                 {/* Decreased Welcome Text Size on desktop: text-5xl (was 7xl) */}
-                <span className="text-5xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
+                <span className="text-4xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
                     selamat datang di
                 </span>
                 <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
