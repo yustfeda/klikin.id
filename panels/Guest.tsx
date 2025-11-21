@@ -128,6 +128,15 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     const stockText = `${sold} / ${remaining}`;
     const total = sold + remaining;
     const barWidth = total > 0 ? (sold / total) * 100 : 0;
+    
+    // Priority logic:
+    // 1. Admin sets "Sale Closed" -> Closed (Gray)
+    // 2. Admin sets "Coming Soon" AND not released -> Coming Soon (Yellow), even if stock is 0
+    // 3. Stock is 0 -> Out of Stock (Gray)
+    // 4. Else -> Buy
+    const isClosed = product.isSaleClosed;
+    const effectivelyComingSoon = product.isComingSoon && !isReleased;
+    const isOutOfStock = product.stock === 0;
 
     const getExtraInfoIcon = (type?: string) => {
         switch(type) {
@@ -145,27 +154,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 md:mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
-        const isClosed = product.isSaleClosed || product.stock === 0;
-        const effectivelyComingSoon = product.isComingSoon && !isReleased;
-        
-        if (effectivelyComingSoon && !isClosed) {
-             return (
-                <div className="flex flex-col w-full px-2 mb-4 md:mb-2">
-                    <div className={`w-full h-auto py-1 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex flex-col items-center justify-center bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
-                        <div className="flex items-center gap-1.5">
-                            <ClockIcon />
-                            <span className="uppercase">Segera Hadir</span>
-                        </div>
-                        {(product.releaseDate || 0) > 0 && (
-                            <div className="text-[8px] sm:text-[10px] mt-0.5">
-                                <ProductCountdown targetDate={product.releaseDate!} />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        }
-        
+        // 1. Manual Close (Priority 1)
         if (isClosed) {
             return (
                 <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
@@ -177,7 +166,38 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                 </div>
             );
         }
+
+        // 2. Coming Soon (Priority 2 - overrides stock 0)
+        if (effectivelyComingSoon) {
+             return (
+                <div className={`${buttonBaseClass} bg-yellow-400 text-gray-900 border-b-2 border-yellow-600 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
+                    <div className="flex items-center gap-1.5 leading-none mt-1">
+                        <ClockIcon />
+                        <span className="uppercase">Segera Hadir</span>
+                    </div>
+                    {(product.releaseDate || 0) > 0 && (
+                        <div className="text-[8px] sm:text-[9px] mt-0.5 font-mono">
+                            <ProductCountdown targetDate={product.releaseDate!} />
+                        </div>
+                    )}
+                </div>
+            );
+        }
         
+        // 3. Out of Stock (Priority 3)
+        if (isOutOfStock) {
+            return (
+                <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
+                    <div className="flex items-center gap-1 leading-none mt-1">
+                        <LockIcon />
+                        <span className="uppercase">Habis</span>
+                    </div>
+                    <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
+                </div>
+            );
+        }
+        
+        // 4. Buy Action (Priority 4)
         return (
             <button onClick={() => onAction(product)} className={`${buttonBaseClass} bg-brand-red text-white border-b-2 border-red-800 hover:bg-red-700 hover:shadow-red-600/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
@@ -196,20 +216,26 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
             <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
-                {(product.isSaleClosed || product.stock === 0) && (
+                {/* Overlays Logic */}
+                {isClosed ? (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
-                            <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
+                            <LockIcon />
                         </div>
                     </div>
-                )}
-                {product.isComingSoon && !isReleased && !product.isSaleClosed && product.stock > 0 && (
+                ) : effectivelyComingSoon ? (
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
                             <span className="text-brand-orange font-bold text-[10px]">SOON</span>
                         </div>
                     </div>
-                )}
+                ) : isOutOfStock ? (
+                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
+                            <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
+                        </div>
+                    </div>
+                ) : null}
 
                 <div className="absolute top-2 left-2 z-20">
                     <span className={`text-[8px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold shadow-sm ${product.category === 'digital' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
@@ -266,7 +292,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                     </div>
 
                     {/* Stock Bar: h-2 mobile, h-1.5 desktop */}
-                    {!product.isSaleClosed && (!product.isComingSoon || isReleased) && product.stock > 0 && (
+                    {!isClosed && !effectivelyComingSoon && product.stock > 0 && (
                         <div className="mb-6 md:mb-3">
                              <div className="flex items-center justify-between gap-1 mb-1">
                                 <div className="w-full bg-gray-100 rounded-full h-2 sm:h-1.5 overflow-hidden border border-gray-200">
@@ -493,11 +519,11 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
         <div className="max-w-3xl mx-auto mb-8">
             <div className="flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-1.5 mb-4">
                 {/* Decreased Welcome Text Size on desktop: text-5xl (was 7xl) */}
-                <span className="text-4xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
+                <span className="text-5xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
                     selamat datang di
                 </span>
                 <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
-                    <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-4xl tracking-wide leading-none">
+                    <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-5xl tracking-wide leading-none">
                         KELIK
                     </span>
                     <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-2xl md:text-3xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">

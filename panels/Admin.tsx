@@ -363,6 +363,7 @@ const AdminPanel: React.FC = () => {
     );
 };
 
+// ... ManageMessages, ManageSettings, Overview, ManageUsers remain unchanged ...
 const ManageMessages = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -894,7 +895,17 @@ const ManageProducts = () => {
     }, []);
 
     const handleEdit = (product: Product) => {
-        setForm({ ...product, extraInfo: product.extraInfo || [], category: product.category || 'physical' });
+        setForm({ 
+            ...product, 
+            extraInfo: product.extraInfo || [], 
+            category: product.category || 'physical',
+            hasCustomMessage: product.hasCustomMessage || false,
+            customMessage: product.customMessage || '',
+            enableWholesale: product.enableWholesale || false,
+            wholesaleMinQty: product.wholesaleMinQty || 10,
+            wholesalePercent: product.wholesalePercent || 2,
+            releaseDate: product.releaseDate || 0
+        });
         setEditId(product.id);
         setIsEditing(true);
     };
@@ -983,6 +994,7 @@ const ManageProducts = () => {
             auth.showNotification({ type: 'success', message: 'Produk ditambahkan' });
         }
         setIsEditing(false);
+        setEditId(null);
     };
 
     const formatDateTimeLocal = (timestamp?: number) => {
