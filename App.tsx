@@ -5,7 +5,7 @@ import GuestPanel from './panels/Guest';
 import UserPanel from './panels/User';
 import AdminPanel from './panels/Admin';
 import { FacebookIcon, InstagramIcon, WhatsappIcon, AdminIcon } from './components/Icons';
-import { checkAdminPassword } from './services/firebase';
+import { checkAdminPassword, subscribeToBackgrounds, subscribeToThemeColor } from './services/firebase';
 
 // Mock Auth Context
 interface AuthContextType {
@@ -16,6 +16,7 @@ interface AuthContextType {
   adminLogin: () => void;
   adminLogout: () => void;
   showNotification: (notification: AppNotification) => void;
+  themeColor: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -27,25 +28,49 @@ export const useAuth = () => {
     return context;
 };
 
-const Footer: React.FC = () => (
-    <footer className="bg-white/80 backdrop-blur-md text-gray-600 py-3 border-t border-gray-200 mt-auto">
-        <div className="container mx-auto px-4 flex flex-col items-center justify-center">
-            <div className="flex space-x-4 mb-2">
-                {/* Icons standardized */}
-                <a href="#" aria-label="Facebook" className="text-gray-400 hover:text-blue-600 transition-all duration-300 transform hover:scale-125 hover:-translate-y-1">
-                    <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"><FacebookIcon /></div>
-                </a>
-                <a href="#" aria-label="Instagram" className="text-gray-400 hover:text-pink-600 transition-all duration-300 transform hover:scale-125 hover:-translate-y-1">
-                     <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"><InstagramIcon /></div>
-                </a>
-                <a href="#" aria-label="WhatsApp" className="text-gray-400 hover:text-green-600 transition-all duration-300 transform hover:scale-125 hover:-translate-y-1">
-                     <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"><WhatsappIcon /></div>
-                </a>
+// Helper to add opacity to hex color
+const hexToRgba = (hex: string, alpha: number) => {
+    let c: any;
+    if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+        c= hex.substring(1).split('');
+        if(c.length== 3){
+            c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+        }
+        c= '0x'+c.join('');
+        return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')';
+    }
+    return hex;
+};
+
+const Footer: React.FC<{themeColor: string}> = ({ themeColor }) => {
+    // Determine text color based on background brightness
+    const isDark = themeColor === '#000000' || themeColor === '#172554' || themeColor === '#0F766E';
+    const textColor = isDark ? 'text-white/80' : 'text-gray-600';
+    const hoverColor = isDark ? 'hover:text-white' : 'hover:text-brand-blue';
+
+    return (
+        <footer 
+            className={`backdrop-blur-md py-3 border-t border-gray-200/30 mt-auto transition-colors duration-500 ${textColor}`}
+            style={{ backgroundColor: hexToRgba(themeColor, 0.78) }}
+        >
+            <div className="container mx-auto px-4 flex flex-col items-center justify-center">
+                <div className="flex space-x-4 mb-2">
+                    {/* Icons standardized */}
+                    <a href="#" aria-label="Facebook" className={`${textColor} ${hoverColor} transition-all duration-300 transform hover:scale-125 hover:-translate-y-1`}>
+                        <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"><FacebookIcon /></div>
+                    </a>
+                    <a href="#" aria-label="Instagram" className={`${textColor} ${hoverColor} transition-all duration-300 transform hover:scale-125 hover:-translate-y-1`}>
+                         <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"><InstagramIcon /></div>
+                    </a>
+                    <a href="#" aria-label="WhatsApp" className={`${textColor} ${hoverColor} transition-all duration-300 transform hover:scale-125 hover:-translate-y-1`}>
+                         <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"><WhatsappIcon /></div>
+                    </a>
+                </div>
+                <p className="text-[8px] opacity-80 tracking-wider font-medium uppercase">© 2025 KELIKin.com reserved | versi.1.3.0</p>
             </div>
-            <p className="text-[8px] text-gray-400 tracking-wider font-medium uppercase">© 2025 KELIKin.com reserved | versi.1.2.0</p>
-        </div>
-    </footer>
-);
+        </footer>
+    );
+};
 
 const SwipeableNotification: React.FC<{ notification: AppNotification, onClose: () => void }> = ({ notification, onClose }) => {
     const [offsetX, setOffsetX] = useState(0);
@@ -147,6 +172,9 @@ const App: React.FC = () => {
   const [panel, setPanel] = useState<PanelType>(PanelType.GUEST);
   const [notification, setNotification] = useState<AppNotification | null>(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [backgrounds, setBackgrounds] = useState<{mobile: string|null, desktop: string|null}>({mobile: null, desktop: null});
+  const [currentBg, setCurrentBg] = useState<string | null>(null);
+  const [themeColor, setThemeColor] = useState<string>('#FFFDD0'); // Default Cream
 
   useEffect(() => {
     const disableContextMenu = (e: MouseEvent) => e.preventDefault();
@@ -163,11 +191,31 @@ const App: React.FC = () => {
         setShowAdminLogin(true);
     }
 
+    const unsubscribeBg = subscribeToBackgrounds(setBackgrounds);
+    const unsubscribeTheme = subscribeToThemeColor(setThemeColor);
+
     return () => {
       document.removeEventListener('contextmenu', disableContextMenu);
       document.removeEventListener('keydown', disableInspect);
+      unsubscribeBg();
+      unsubscribeTheme();
     };
   }, []);
+  
+  useEffect(() => {
+      const updateBackground = () => {
+          const width = window.innerWidth;
+          if (width < 768) {
+              setCurrentBg(backgrounds.mobile);
+          } else {
+              setCurrentBg(backgrounds.desktop);
+          }
+      };
+
+      window.addEventListener('resize', updateBackground);
+      updateBackground(); // Initial call
+      return () => window.removeEventListener('resize', updateBackground);
+  }, [backgrounds]);
   
   const showNotification = useCallback((notif: AppNotification) => {
       setNotification(notif);
@@ -206,7 +254,8 @@ const App: React.FC = () => {
       logout: handleLogout,
       adminLogin: handleAdminLogin,
       adminLogout: handleAdminLogout,
-      showNotification
+      showNotification,
+      themeColor
   };
 
   const renderPanel = () => {
@@ -223,8 +272,15 @@ const App: React.FC = () => {
 
   return (
     <AuthContext.Provider value={authContextValue}>
-        {/* Global Background changed to bg-gray-200/gray-100 for contrast with white containers */}
-        <div className="flex flex-col min-h-screen w-full bg-gray-200 text-[10px] md:text-sm">
+        <div 
+            className="flex flex-col min-h-screen w-full bg-gray-200 text-[10px] md:text-sm transition-all duration-500 ease-in-out"
+            style={{
+                backgroundImage: currentBg ? `url(${currentBg})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundAttachment: 'fixed'
+            }}
+        >
           <div className="flex-grow w-full flex flex-col relative">
             {showAdminLogin && panel !== PanelType.ADMIN ? (
                 <AdminLogin onSuccess={handleAdminLogin} />
@@ -232,7 +288,7 @@ const App: React.FC = () => {
                 renderPanel()
             )}
           </div>
-          {!showAdminLogin && <Footer />}
+          {!showAdminLogin && <Footer themeColor={themeColor} />}
         </div>
         {notification && (
             <SwipeableNotification notification={notification} onClose={() => setNotification(null)} />

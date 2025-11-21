@@ -4,7 +4,20 @@ import { useAuth } from '../App';
 import { OverviewIcon, UsersIcon, ProductIcon, OrdersIcon, LogoutIcon, TrashIcon, EditIcon, CheckIcon, XCircleIcon, LockIcon, SearchIcon, XMarkIcon, ClockIcon, GlobeAltIcon, EnvelopeIcon, PaperAirplaneIcon, SettingsIcon } from '../components/Icons';
 import { User, Product, Order, OrderStatus, InvoiceSettings, ProductCategory, Message } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { subscribeToOrders, subscribeToProducts, subscribeToUsers, updateOrderStatus, addProduct, updateProduct, deleteProduct, deleteUser, toggleUserStatus, updateBanner, subscribeToBanner, updateInvoiceSettings, subscribeToInvoiceSettings, deleteOrder, deleteAllOrdersByUser, sendMessage, subscribeToMessages, deleteMessage } from '../services/firebase';
+import { subscribeToOrders, subscribeToProducts, subscribeToUsers, updateOrderStatus, addProduct, updateProduct, deleteProduct, deleteUser, toggleUserStatus, updateBanner, subscribeToBanner, updateInvoiceSettings, subscribeToInvoiceSettings, deleteOrder, deleteAllOrdersByUser, sendMessage, subscribeToMessages, deleteMessage, updateBackgrounds, subscribeToBackgrounds, updateThemeColor } from '../services/firebase';
+
+const hexToRgba = (hex: string, alpha: number) => {
+    let c: any;
+    if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+        c= hex.substring(1).split('');
+        if(c.length== 3){
+            c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+        }
+        c= '0x'+c.join('');
+        return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')';
+    }
+    return hex;
+};
 
 const CachedImage = ({ src, alt, className }: { src: string, alt: string, className?: string }) => {
     const [imgSrc, setImgSrc] = useState<string>(src);
@@ -313,7 +326,10 @@ const AdminPanel: React.FC = () => {
     return (
         <>
              {isLoading && <LoadingScreen />}
-             <header className="bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-all duration-500 h-14">
+             <header 
+                className="backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14"
+                style={{ backgroundColor: hexToRgba(auth.themeColor, 0.78) }}
+             >
                 <Logo />
                 <nav className="hidden md:flex items-center space-x-4">
                     {adminNavItems.map(item => (
@@ -323,7 +339,7 @@ const AdminPanel: React.FC = () => {
                 <HamburgerIcon isOpen={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} badgeCount={pendingOrdersCount} />
             </header>
 
-            <div className={`fixed top-0 left-0 h-full w-64 bg-white/90 backdrop-blur-md z-50 transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden shadow-lg border-r border-gray-200`}>
+            <div className={`fixed top-0 left-0 h-full w-64 backdrop-blur-md z-50 transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden shadow-lg border-r border-gray-200`} style={{ backgroundColor: hexToRgba(auth.themeColor, 0.9) }}>
                 <div className="p-4 mb-2 mt-2">
                     <Logo />
                 </div>
@@ -342,9 +358,7 @@ const AdminPanel: React.FC = () => {
     );
 };
 
-// ... ManageMessages, ManageSettings, Overview remain identical ...
 const ManageMessages = () => {
-    // ... No logic changes needed for messages ...
     const [users, setUsers] = useState<User[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [targetUser, setTargetUser] = useState<string>(''); 
@@ -476,9 +490,10 @@ const ManageMessages = () => {
         </div>
     );
 };
-// ... ManageSettings, Overview remain same ...
+
 const ManageSettings = () => {
     const [banner, setBanner] = useState<string | null>(null);
+    const [backgrounds, setBackgrounds] = useState<{mobile: string|null, desktop: string|null}>({mobile: null, desktop: null});
     const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings>({
         companyName: 'KELIKin.com',
         companyAddress: '',
@@ -487,18 +502,29 @@ const ManageSettings = () => {
         ownerName: ''
     });
     const [rawImage, setRawImage] = useState<string | null>(null);
-    const [cropType, setCropType] = useState<'banner' | 'logo' | 'signature'>('banner');
+    const [cropType, setCropType] = useState<'banner' | 'logo' | 'signature' | 'bg-mobile' | 'bg-desktop'>('banner');
+    const [bgDeleteType, setBgDeleteType] = useState<'mobile' | 'desktop' | null>(null);
+    
     const auth = useAuth();
+
+    const themeColors = [
+        { name: 'Cream', hex: '#FFFDD0' },
+        { name: 'Putih', hex: '#FFFFFF' },
+        { name: 'Hijau Kebiruan', hex: '#0F766E' },
+        { name: 'Biru Tua', hex: '#172554' },
+        { name: 'Hitam', hex: '#000000' },
+    ];
 
     useEffect(() => {
         const unsubBanner = subscribeToBanner(setBanner);
         const unsubInv = subscribeToInvoiceSettings((settings) => {
             if (settings) setInvoiceSettings(settings);
         });
-        return () => { unsubBanner(); unsubInv(); };
+        const unsubBg = subscribeToBackgrounds(setBackgrounds);
+        return () => { unsubBanner(); unsubInv(); unsubBg(); };
     }, []);
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'banner' | 'logo' | 'signature') => {
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'banner' | 'logo' | 'signature' | 'bg-mobile' | 'bg-desktop') => {
         const file = e.target.files?.[0];
         if (file) {
             setCropType(type);
@@ -513,6 +539,8 @@ const ManageSettings = () => {
             if (cropType === 'banner') await updateBanner(croppedBase64);
             else if (cropType === 'logo') await updateInvoiceSettings({ ...invoiceSettings, logoUrl: croppedBase64 });
             else if (cropType === 'signature') await updateInvoiceSettings({ ...invoiceSettings, signatureUrl: croppedBase64 });
+            else if (cropType === 'bg-mobile') await updateBackgrounds('mobile', croppedBase64);
+            else if (cropType === 'bg-desktop') await updateBackgrounds('desktop', croppedBase64);
             
             auth.showNotification({ type: 'success', message: 'Gambar diperbarui' });
             setRawImage(null);
@@ -521,15 +549,49 @@ const ManageSettings = () => {
         }
     };
     
+    const confirmDeleteBg = (type: 'mobile' | 'desktop') => {
+        setBgDeleteType(type);
+    };
+
+    const handleDeleteBg = async () => {
+        if (bgDeleteType) {
+            await updateBackgrounds(bgDeleteType, null);
+            auth.showNotification({ type: 'success', message: `Background ${bgDeleteType} dihapus` });
+            setBgDeleteType(null);
+        }
+    };
+
     const saveInvoiceSettings = async () => {
         await updateInvoiceSettings(invoiceSettings);
         auth.showNotification({ type: 'success', message: 'Pengaturan disimpan' });
+    };
+
+    const handleThemeChange = async (color: string) => {
+        await updateThemeColor(color);
+        auth.showNotification({ type: 'success', message: 'Warna tema diupdate!' });
     };
 
     return (
         <div className="p-2 max-w-5xl mx-auto">
              <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800">Pengaturan</h2>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 md:col-span-2">
+                     <h3 className="text-sm font-semibold mb-3">Warna Tema Aplikasi (Header & Footer)</h3>
+                     <div className="flex flex-wrap gap-3">
+                         {themeColors.map(c => (
+                             <button 
+                                key={c.hex}
+                                onClick={() => handleThemeChange(c.hex)}
+                                className={`flex flex-col items-center gap-2 p-2 rounded-lg border-2 transition-all ${auth.themeColor === c.hex ? 'border-brand-red bg-red-50' : 'border-transparent hover:bg-gray-50'}`}
+                             >
+                                 <div className="w-10 h-10 rounded-full shadow-sm border border-gray-200" style={{ backgroundColor: c.hex }}></div>
+                                 <span className="text-[10px] font-bold text-gray-700">{c.name}</span>
+                             </button>
+                         ))}
+                     </div>
+                     <p className="text-[9px] text-gray-500 mt-2">*Header dan Footer akan otomatis transparan 78%.</p>
+                 </div>
+
                  <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
                     <h3 className="text-sm font-semibold mb-3">Banner Beranda</h3>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 cursor-pointer relative h-24 flex items-center justify-center bg-white shadow-inner">
@@ -541,6 +603,37 @@ const ManageSettings = () => {
                     </div>
                     {banner && <CachedImage src={banner} alt="Banner" className="w-full mt-3 rounded-lg border h-20 object-cover" />}
                  </div>
+                 
+                 <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 md:col-span-2">
+                     <h3 className="text-sm font-semibold mb-3">Background Aplikasi</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         {/* Mobile BG */}
+                         <div className="p-3 border rounded-lg relative">
+                             <h4 className="text-xs font-bold mb-2 flex justify-between items-center">
+                                 Tampilan HP (Mobile)
+                                 {backgrounds.mobile && <button onClick={() => confirmDeleteBg('mobile')} className="text-red-500 hover:text-red-700"><TrashIcon /></button>}
+                             </h4>
+                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 cursor-pointer relative h-24 flex items-center justify-center bg-white shadow-inner">
+                                <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'bg-mobile')} />
+                                <span className="text-gray-900 font-bold text-[10px]">Upload BG Mobile</span>
+                            </div>
+                            {backgrounds.mobile && <div className="mt-2 h-32 w-full bg-gray-100 rounded border overflow-hidden relative"><img src={backgrounds.mobile} className="w-full h-full object-cover" /></div>}
+                         </div>
+                         {/* Desktop BG */}
+                         <div className="p-3 border rounded-lg relative">
+                             <h4 className="text-xs font-bold mb-2 flex justify-between items-center">
+                                 Tampilan Desktop (Website)
+                                 {backgrounds.desktop && <button onClick={() => confirmDeleteBg('desktop')} className="text-red-500 hover:text-red-700"><TrashIcon /></button>}
+                             </h4>
+                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 cursor-pointer relative h-24 flex items-center justify-center bg-white shadow-inner">
+                                <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'bg-desktop')} />
+                                <span className="text-gray-900 font-bold text-[10px]">Upload BG Desktop</span>
+                            </div>
+                            {backgrounds.desktop && <div className="mt-2 h-32 w-full bg-gray-100 rounded border overflow-hidden relative"><img src={backgrounds.desktop} className="w-full h-full object-cover" /></div>}
+                         </div>
+                     </div>
+                 </div>
+
                  <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 md:col-span-2">
                     <h3 className="text-sm font-semibold mb-3 border-b pb-1">Pengaturan Invoice</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 [&>input]:bg-white [&>input]:text-gray-900 [&>input]:border-gray-300 [&>textarea]:bg-white [&>textarea]:text-gray-900 [&>textarea]:border-gray-300">
@@ -563,7 +656,31 @@ const ManageSettings = () => {
                     <button onClick={saveInvoiceSettings} className="bg-brand-red text-white px-4 py-1.5 rounded-lg font-bold text-[10px] w-full sm:w-auto hover:bg-red-700 transition-colors">Simpan Pengaturan Invoice</button>
                  </div>
              </div>
-             {rawImage && <ImageCropper src={rawImage} onCrop={handleCropComplete} onCancel={() => setRawImage(null)} cropWidth={cropType === 'banner' ? 600 : 200} cropHeight={cropType === 'banner' ? 200 : 100} />}
+             
+             {rawImage && (
+                 <ImageCropper 
+                    src={rawImage} 
+                    onCrop={handleCropComplete} 
+                    onCancel={() => setRawImage(null)} 
+                    cropWidth={cropType.startsWith('bg') ? 360 : (cropType === 'banner' ? 600 : 200)}
+                    cropHeight={cropType === 'bg-mobile' ? 640 : (cropType === 'bg-desktop' ? 200 : (cropType === 'banner' ? 200 : 100))}
+                    title={cropType.startsWith('bg') ? "Sesuaikan Background" : "Sesuaikan Gambar"}
+                />
+            )}
+            
+            {/* Delete BG Confirmation Modal */}
+            {bgDeleteType && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-5 rounded-lg shadow-xl max-w-xs w-full animate-in zoom-in duration-200">
+                        <h3 className="text-base font-bold text-gray-800 mb-2">Konfirmasi Hapus</h3>
+                        <p className="text-gray-600 mb-4 text-[10px]">Apakah anda yakin ingin menghapus background {bgDeleteType}?</p>
+                        <div className="flex justify-end space-x-2">
+                            <button onClick={() => setBgDeleteType(null)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg font-bold text-[10px]">Tidak</button>
+                            <button onClick={handleDeleteBg} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-[10px]">Ya, Hapus</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -680,6 +797,7 @@ const Overview = () => {
     );
 };
 
+// ... ManageUsers, ManageProducts, ManageOrders remain same (except for re-export) ...
 const ManageUsers = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);

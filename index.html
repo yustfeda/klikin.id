@@ -26,12 +26,14 @@
               'brand-orange': '#EA580C', 
               'brand-red': '#8B0000',
               'brand-blue': '#2563eb',
+              'brand-cream': '#FFFDD0', // Cream color added
             },
             animation: {
               'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'fade-in': 'fadeIn 0.5s ease-in-out',
               'fade-out': 'fadeOut 0.5s ease-in-out',
               'ring-interval': 'ring-interval 5s ease-in-out infinite',
+              'jump-interval': 'jump-interval 5s ease-in-out infinite',
             },
             keyframes: {
               fadeIn: {
@@ -49,6 +51,13 @@
                 '95%': { transform: 'rotate(15deg)' },
                 '97%': { transform: 'rotate(-15deg)' },
                 '100%': { transform: 'rotate(0)' }
+              },
+              'jump-interval': {
+                '0%, 80%': { transform: 'translateY(0)' },
+                '85%': { transform: 'translateY(-5px)' },
+                '90%': { transform: 'translateY(-10px)' },
+                '95%': { transform: 'translateY(-5px)' },
+                '100%': { transform: 'translateY(0)' }
               }
             }
           }

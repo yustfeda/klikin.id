@@ -6,6 +6,19 @@ import { HomeIcon, ProductIcon, InfoIcon, LoginIcon, SearchIcon, XMarkIcon, Cloc
 import { Product } from '../types';
 import { subscribeToProducts, loginUser, registerUser, subscribeToBanner } from '../services/firebase';
 
+const hexToRgba = (hex: string, alpha: number) => {
+    let c: any;
+    if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+        c= hex.substring(1).split('');
+        if(c.length== 3){
+            c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+        }
+        c= '0x'+c.join('');
+        return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')';
+    }
+    return hex;
+};
+
 // Improved CachedImage using LocalStorage
 const CachedImage = ({ src, alt, className }: { src: string, alt: string, className?: string }) => {
     const [imgSrc, setImgSrc] = useState<string>(src);
@@ -80,9 +93,9 @@ const ProductCountdown = ({ targetDate }: { targetDate: number }) => {
     if (isHidden || !targetDate) return null;
 
     return (
-        <div className="text-right text-brand-red font-bold text-[10px] tracking-tight leading-none shadow-sm px-1">
+        <span className="text-[inherit] font-bold tracking-tight leading-none">
             {timeLeft}
-        </div>
+        </span>
     );
 };
 
@@ -129,7 +142,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     // Button: Default Red
-    const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
+    const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 md:mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
         const isClosed = product.isSaleClosed || product.stock === 0;
@@ -137,10 +150,17 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
         
         if (effectivelyComingSoon && !isClosed) {
              return (
-                <div className="flex flex-col w-full px-2 mb-4">
-                    <div className={`w-full h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex items-center justify-center gap-1.5 bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
-                        <ClockIcon />
-                        <span className="uppercase">Segera Hadir</span>
+                <div className="flex flex-col w-full px-2 mb-4 md:mb-2">
+                    <div className={`w-full h-auto py-1 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex flex-col items-center justify-center bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
+                        <div className="flex items-center gap-1.5">
+                            <ClockIcon />
+                            <span className="uppercase">Segera Hadir</span>
+                        </div>
+                        {(product.releaseDate || 0) > 0 && (
+                            <div className="text-[8px] sm:text-[10px] mt-0.5">
+                                <ProductCountdown targetDate={product.releaseDate!} />
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -171,9 +191,9 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     return (
-        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10 pb-1">
+        <div className="group bg-white md:bg-transparent md:shadow-none md:border-0 md:hover:shadow-none md:hover:translate-y-0 rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 md:border-0 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10 pb-1">
             {/* Image: Smaller on Desktop (md:h-36) for compact look */}
-            <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
+            <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden md:rounded-lg">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
@@ -213,17 +233,17 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
             </div>
 
             {/* Content */}
-            <div className="flex flex-col flex-grow relative z-10 bg-white">
+            <div className="flex flex-col flex-grow relative z-10 bg-white md:bg-transparent">
                 {/* Title increased */}
-                <div className="pt-3 px-2 mb-4">
+                <div className="pt-3 px-2 mb-4 md:mb-2 md:pt-1">
                     <h3 className="font-bold text-xl sm:text-2xl truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
                 </div>
                 
-                {/* Extra Info Spacing Increased */}
+                {/* Extra Info Spacing Increased & Font Size Adjusted for Desktop */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="my-5 bg-gray-50 py-1.5 px-2 mx-2 rounded border border-gray-100 space-y-3 sm:space-y-1">
+                    <div className="my-5 md:my-2 bg-gray-50 md:bg-transparent md:border-0 md:p-0 py-1.5 px-2 mx-2 rounded border border-gray-100 space-y-3 sm:space-y-1">
                         {product.extraInfo.map((info, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 text-[9px] text-gray-700">
+                            <div key={idx} className="flex items-center gap-1.5 text-[9px] md:text-[11px] text-gray-700">
                                 <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
                                     {getExtraInfoIcon(info.iconType)}
                                 </div>
@@ -238,7 +258,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
 
                 <div className="mt-auto px-2">
                      {/* Price Increased */}
-                    <div className="mb-6 text-left">
+                    <div className="mb-6 md:mb-3 text-left">
                         {product.originalPrice > product.discountedPrice && (
                             <span className="text-sm text-gray-400 line-through block mb-0.5 text-left">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
                         )}
@@ -247,7 +267,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
 
                     {/* Stock Bar: h-2 mobile, h-1.5 desktop */}
                     {!product.isSaleClosed && (!product.isComingSoon || isReleased) && product.stock > 0 && (
-                        <div className="mb-6">
+                        <div className="mb-6 md:mb-3">
                              <div className="flex items-center justify-between gap-1 mb-1">
                                 <div className="w-full bg-gray-100 rounded-full h-2 sm:h-1.5 overflow-hidden border border-gray-200">
                                     <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
@@ -258,13 +278,6 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                     )}
                 </div>
             </div>
-
-            {/* Countdown: Absolute Positioned above button. Only show if effectively coming soon. */}
-            {product.isComingSoon && !isReleased && !product.isSaleClosed && (product.releaseDate || 0) > 0 && (
-                 <div className="absolute bottom-14 right-3 z-20 pointer-events-none">
-                    <ProductCountdown targetDate={product.releaseDate!} />
-                 </div>
-            )}
             
             {getButton()}
         </div>
@@ -393,9 +406,12 @@ const GuestPanel: React.FC = () => {
     }, [isLoginModalOpen, isGuestBuyModalOpen]);
 
     return (
-        <div className="flex-grow w-full bg-gray-50 font-sans flex flex-col min-h-screen">
+        <div className="flex-grow w-full bg-transparent font-sans flex flex-col min-h-screen">
              {isLoading && <LoadingScreen />}
-             <header className="bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-all duration-500 h-14">
+             <header 
+                className="backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14"
+                style={{ backgroundColor: hexToRgba(auth.themeColor, 0.78) }}
+             >
                 <Logo />
                 <nav className="hidden md:flex items-center space-x-4">
                     {guestNavItems.map(item => (
@@ -405,7 +421,7 @@ const GuestPanel: React.FC = () => {
                 <HamburgerIcon isOpen={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} />
             </header>
 
-            <div className={`fixed top-0 left-0 h-full w-64 bg-white/90 backdrop-blur-md z-50 transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden shadow-2xl border-r border-gray-200`}>
+            <div className={`fixed top-0 left-0 h-full w-64 backdrop-blur-md z-50 transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden shadow-2xl border-r border-gray-200`} style={{ backgroundColor: hexToRgba(auth.themeColor, 0.9) }}>
                 <div className="p-4 mb-2 mt-2">
                     <Logo />
                 </div>
@@ -471,8 +487,8 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
 
         <div className="max-w-3xl mx-auto mb-8">
             <div className="flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-1.5 mb-4">
-                {/* Increased Welcome Text Size: text-5xl on mobile */}
-                <span className="text-5xl sm:text-6xl md:text-7xl font-oswald text-gray-800 tracking-wide lowercase">
+                {/* Decreased Welcome Text Size on desktop: text-5xl (was 7xl) */}
+                <span className="text-5xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
                     selamat datang di
                 </span>
                 <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
@@ -501,6 +517,7 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
         
          <div className="bg-white py-6 border-t border-gray-100">
              <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
+             {/* Increased Grid Columns to lg:6 xl:8 to make items smaller */}
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
                 {products.slice(0, 5).map(p => (
                      <div key={p.id} className="transform origin-top">
@@ -516,6 +533,7 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
 const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => void }> = ({ products, onAction }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Produk</h2>
+        {/* Increased Grid Columns to lg:6 xl:8 to make items smaller */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                  <ProductCard key={p.id} product={p} onAction={onAction} />

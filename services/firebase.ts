@@ -10,370 +10,300 @@ const firebaseConfig = {
     projectId: "artstatis",
     storageBucket: "artstatis.firebasestorage.app",
     messagingSenderId: "351502028950",
-    appId: "1:351502028950:web:9737cdd91d442e8042b2b7"
+    appId: "1:351502028950:web:8749825e815e3914f10312"
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getDatabase(app);
+const database = getDatabase(app);
 
-// --- Initial Data Seeding (Run once if DB is empty) ---
-const seedData = async () => {
-    const dbRef = ref(db);
-    const snapshot = await get(child(dbRef, "products"));
-    if (!snapshot.exists()) {
-        console.log("Seeding initial data...");
-        const initialProducts: Product[] = [
-            { id: 'p1', name: 'Abstract Canvas Art', imageUrl: 'https://picsum.photos/400/300?random=1', originalPrice: 25000, discountedPrice: 15000, discountPercent: 40, saleTag: 'pre sale 3', stock: 5, isSaleClosed: false, isComingSoon: false, totalSold: 5, extraInfo: [{label: 'Lokasi', value: 'Jakarta', iconType: 'location'}, {label: 'Waktu', value: '2025', iconType: 'time'}] },
-            { id: 'p2', name: 'Modern Sculpture', imageUrl: 'https://picsum.photos/400/300?random=2', originalPrice: 50000, discountedPrice: 45000, discountPercent: 10, saleTag: 'sale', stock: 2, isSaleClosed: false, isComingSoon: false, totalSold: 3, extraInfo: [] },
-            { id: 'p3', name: 'Vintage Poster Print', imageUrl: 'https://picsum.photos/400/300?random=3', originalPrice: 10000, discountedPrice: 10000, discountPercent: 0, saleTag: '', stock: 0, isSaleClosed: false, isComingSoon: false, totalSold: 20, extraInfo: [] },
-            { id: 'p4', name: 'Handcrafted Pottery', imageUrl: 'https://picsum.photos/400/300?random=4', originalPrice: 30000, discountedPrice: 30000, discountPercent: 0, saleTag: '', stock: 8, isSaleClosed: true, isComingSoon: false, totalSold: 123, extraInfo: [] },
-        ];
-        
-        const updates: any = {};
-        initialProducts.forEach(p => {
-            updates['/products/' + p.id] = p;
-        });
-        await update(ref(db), updates);
+export const loginUser = async (email: string, pass: string): Promise<User> => {
+    const dbRef = ref(database);
+    const snapshot = await get(child(dbRef, `users`));
+    if (snapshot.exists()) {
+        const users = snapshot.val();
+        const foundKey = Object.keys(users).find(key => users[key].email === email && users[key].password === pass);
+        if (foundKey) {
+            const userData = users[foundKey];
+            if (!userData.isActive) throw new Error("Akun anda dinonaktifkan.");
+            
+            // Update last seen
+            await update(ref(database, `users/${foundKey}`), { lastSeen: Date.now() });
+            
+            return {
+                uid: foundKey,
+                username: userData.username,
+                email: userData.email,
+                profilePicture: userData.profilePicture,
+                lastSeen: Date.now(),
+                isActive: true
+            };
+        }
     }
+    throw new Error("Email atau password salah.");
 };
 
-seedData();
+export const registerUser = async (email: string, username: string, pass: string): Promise<User> => {
+    const dbRef = ref(database);
+    
+    // Check duplicate email
+    const snapshot = await get(child(dbRef, `users`));
+    if (snapshot.exists()) {
+        const users = snapshot.val();
+        const existing = Object.values(users).find((u: any) => u.email === email);
+        if (existing) throw new Error("Email sudah terdaftar.");
+    }
 
-// --- ADMIN AUTH SIMULATION ---
-export const checkAdminPassword = async (password: string): Promise<boolean> => {
-    // Simulating backend check. In a real app, this would verify against a secure server function.
-    return password === "Masuk22";
+    const newUserRef = push(child(dbRef, 'users'));
+    const uid = newUserRef.key!;
+    const newUser = {
+        email,
+        username,
+        password: pass,
+        profilePicture: '',
+        lastSeen: Date.now(),
+        isActive: true
+    };
+    
+    await set(newUserRef, newUser);
+    return { uid, ...newUser };
 };
 
-// --- Product Services ---
+export const checkAdminPassword = async (pass: string): Promise<boolean> => {
+    const snapshot = await get(child(ref(database), 'admin/password'));
+    const correctPass = snapshot.exists() ? snapshot.val() : 'admin123'; // Default fallback
+    return pass === correctPass;
+};
 
 export const subscribeToProducts = (callback: (products: Product[]) => void) => {
-    const productsRef = ref(db, 'products');
-    return onValue(productsRef, (snapshot) => {
+    const productsRef = ref(database, 'products');
+    const unsubscribe = onValue(productsRef, (snapshot) => {
         const data = snapshot.val();
-        const productsList: Product[] = data ? Object.values(data) : [];
+        const productsList: Product[] = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                productsList.push({ id: key, ...data[key] });
+            });
+        }
         callback(productsList);
     });
+    return () => unsubscribe();
 };
 
-export const addProduct = async (product: Omit<Product, 'id'>) => {
-    const newKey = push(child(ref(db), 'products')).key;
-    const newProduct = { ...product, id: newKey! };
-    const updates: any = {};
-    updates['/products/' + newKey] = newProduct;
-    await update(ref(db), updates);
+export const addProduct = async (product: Product) => {
+    const newProductRef = push(child(ref(database), 'products'));
+    await set(newProductRef, product);
 };
 
-export const updateProduct = async (productId: string, data: Partial<Product>) => {
-    const updates: any = {};
-    Object.keys(data).forEach(key => {
-        updates[`/products/${productId}/${key}`] = data[key as keyof Product];
+export const updateProduct = async (id: string, updates: Partial<Product>) => {
+    await update(ref(database, `products/${id}`), updates);
+};
+
+export const deleteProduct = async (id: string) => {
+    await remove(ref(database, `products/${id}`));
+};
+
+export const createOrder = async (userId: string, username: string, product: Product, quantity: number, shipping: {name: string, address: string, phone: string}) => {
+    const newOrderRef = push(child(ref(database), 'orders'));
+    const orderId = newOrderRef.key!;
+    
+    let finalPrice = product.discountedPrice;
+    if (product.enableWholesale && product.wholesaleMinQty && product.wholesalePercent) {
+        if (quantity >= product.wholesaleMinQty) {
+            finalPrice = finalPrice * (1 - product.wholesalePercent / 100);
+        }
+    }
+    const totalPrice = finalPrice * quantity;
+
+    const order: Order = {
+        id: orderId,
+        userId,
+        username,
+        items: [{ product, quantity }],
+        totalPrice: totalPrice,
+        status: OrderStatus.PENDING,
+        timestamp: Date.now(),
+        shippingDetails: shipping
+    };
+    await set(newOrderRef, order);
+    return orderId;
+};
+
+export const subscribeToOrders = (callback: (orders: Order[]) => void) => {
+    const ordersRef = ref(database, 'orders');
+    const unsubscribe = onValue(ordersRef, (snapshot) => {
+        const data = snapshot.val();
+        const ordersList: Order[] = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                ordersList.push({ id: key, ...data[key] });
+            });
+        }
+        // Sort by newest first
+        ordersList.sort((a, b) => b.timestamp - a.timestamp);
+        callback(ordersList);
     });
-    await update(ref(db), updates);
+    return () => unsubscribe();
 };
 
-export const deleteProduct = async (productId: string) => {
-    await remove(ref(db, `products/${productId}`));
+export const updateOrderProof = async (orderId: string, proofBase64: string) => {
+    await update(ref(database, `orders/${orderId}`), { paymentProof: proofBase64 });
 };
 
-// --- Message Services ---
+export const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    const updates: any = { status };
+    
+    // If Paid, update product stats
+    if (status === OrderStatus.PAID) {
+        const orderSnap = await get(child(ref(database), `orders/${orderId}`));
+        if (orderSnap.exists()) {
+            const order = orderSnap.val() as Order;
+            // Only deduct stock if not already deducted (simple check, ideally backend logic)
+            // For this demo, we just decrement.
+            const item = order.items[0];
+            const productSnap = await get(child(ref(database), `products/${item.product.id}`));
+            if (productSnap.exists()) {
+                const currentProd = productSnap.val();
+                const newSold = (currentProd.totalSold || 0) + item.quantity;
+                const newStock = (currentProd.stock || 0) - item.quantity;
+                await update(ref(database, `products/${item.product.id}`), {
+                    totalSold: newSold,
+                    stock: newStock >= 0 ? newStock : 0
+                });
+            }
+        }
+    }
 
-export const sendMessage = async (userId: string, title: string, content: string, fromAdmin: boolean = true) => {
-    const newKey = push(child(ref(db), 'messages')).key;
-    const message: Message = {
-        id: newKey!,
+    await update(ref(database, `orders/${orderId}`), updates);
+};
+
+export const deleteOrder = async (orderId: string) => {
+    await remove(ref(database, `orders/${orderId}`));
+};
+
+export const hideOrderForUser = async (orderId: string) => {
+    await update(ref(database, `orders/${orderId}`), { hiddenForUser: true });
+};
+
+export const deleteAllOrdersByUser = async (userId: string) => {
+     const snapshot = await get(child(ref(database), 'orders'));
+     if (snapshot.exists()) {
+         const orders = snapshot.val();
+         const updates: any = {};
+         Object.keys(orders).forEach(key => {
+             if (orders[key].userId === userId) {
+                 updates[key] = null;
+             }
+         });
+         await update(ref(database, 'orders'), updates);
+     }
+};
+
+export const subscribeToUsers = (callback: (users: User[]) => void) => {
+    const usersRef = ref(database, 'users');
+    const unsubscribe = onValue(usersRef, (snapshot) => {
+        const data = snapshot.val();
+        const userList: User[] = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                userList.push({ uid: key, ...data[key] });
+            });
+        }
+        callback(userList);
+    });
+    return () => unsubscribe();
+};
+
+export const deleteUser = async (uid: string) => {
+    await remove(ref(database, `users/${uid}`));
+};
+
+export const toggleUserStatus = async (uid: string, currentStatus: boolean) => {
+    await update(ref(database, `users/${uid}`), { isActive: !currentStatus });
+};
+
+export const updateUserProfile = async (uid: string, data: Partial<User>) => {
+    await update(ref(database, `users/${uid}`), data);
+};
+
+export const updateBanner = async (base64: string) => {
+    await set(ref(database, 'settings/banner'), base64);
+};
+
+export const subscribeToBanner = (callback: (banner: string | null) => void) => {
+    const unsubscribe = onValue(ref(database, 'settings/banner'), (snapshot) => {
+        callback(snapshot.val());
+    });
+    return () => unsubscribe();
+};
+
+export const updateBackgrounds = async (type: 'mobile' | 'desktop', base64: string | null) => {
+    await set(ref(database, `settings/backgrounds/${type}`), base64);
+};
+
+export const subscribeToBackgrounds = (callback: (bg: { mobile: string | null, desktop: string | null }) => void) => {
+    const unsubscribe = onValue(ref(database, 'settings/backgrounds'), (snapshot) => {
+        const data = snapshot.val() || { mobile: null, desktop: null };
+        callback(data);
+    });
+    return () => unsubscribe();
+};
+
+export const updateThemeColor = async (color: string) => {
+    await set(ref(database, 'settings/themeColor'), color);
+};
+
+export const subscribeToThemeColor = (callback: (color: string) => void) => {
+    const unsubscribe = onValue(ref(database, 'settings/themeColor'), (snapshot) => {
+        callback(snapshot.val() || '#FFFDD0'); // Default to Cream
+    });
+    return () => unsubscribe();
+};
+
+export const updateInvoiceSettings = async (settings: InvoiceSettings) => {
+    await update(ref(database, 'settings/invoice'), settings);
+};
+
+export const subscribeToInvoiceSettings = (callback: (settings: InvoiceSettings | null) => void) => {
+    const unsubscribe = onValue(ref(database, 'settings/invoice'), (snapshot) => {
+        callback(snapshot.val());
+    });
+    return () => unsubscribe();
+};
+
+export const sendMessage = async (userId: string, title: string, content: string) => {
+    const newMsgRef = push(child(ref(database), 'messages'));
+    const msg: Message = {
+        id: newMsgRef.key!,
         userId,
         title,
         content,
         timestamp: Date.now(),
         isRead: false,
-        fromAdmin
+        fromAdmin: true
     };
-    await update(ref(db), { [`/messages/${newKey}`]: message });
+    await set(newMsgRef, msg);
 };
 
 export const subscribeToMessages = (callback: (messages: Message[]) => void) => {
-    const msgRef = ref(db, 'messages');
-    return onValue(msgRef, (snapshot) => {
+    const msgRef = ref(database, 'messages');
+    const unsubscribe = onValue(msgRef, (snapshot) => {
         const data = snapshot.val();
-        const list: Message[] = data ? Object.values(data) : [];
-        // Sort by timestamp desc
-        list.sort((a, b) => b.timestamp - a.timestamp);
-        callback(list);
-    });
-};
-
-export const markMessageAsRead = async (messageId: string) => {
-    await update(ref(db, `messages/${messageId}`), { isRead: true });
-};
-
-export const deleteMessage = async (messageId: string) => {
-    await remove(ref(db, `messages/${messageId}`));
-};
-
-// --- Order Services ---
-
-export const createOrder = async (
-    userId: string, 
-    username: string, 
-    product: Product, 
-    quantity: number,
-    shippingDetails?: { name: string; address: string; phone: string }
-) => {
-    const newOrderKey = push(child(ref(db), 'orders')).key;
-    
-    // Calculate Price based on Bulk Discount
-    let finalUnitPrice = product.discountedPrice;
-    if (product.enableWholesale && product.wholesaleMinQty && product.wholesalePercent) {
-        if (quantity >= product.wholesaleMinQty) {
-            finalUnitPrice = finalUnitPrice * (1 - product.wholesalePercent / 100);
+        const msgs: Message[] = [];
+        if (data) {
+            Object.keys(data).forEach(key => {
+                msgs.push({ ...data[key], id: key });
+            });
         }
-    }
-    const totalPrice = finalUnitPrice * quantity;
-    
-    const order: Order = {
-        id: newOrderKey!,
-        userId,
-        username,
-        items: [{ product, quantity }], 
-        totalPrice,
-        status: OrderStatus.PENDING,
-        timestamp: Date.now(),
-        shippingDetails,
-        hiddenForUser: false 
-    };
-
-    const updates: any = {};
-    updates['/orders/' + newOrderKey] = order;
-    
-    await update(ref(db), updates);
-
-    // NOTE: Automatic Voucher Message logic is NOT here. It's in updateOrderStatus (Status=Lunas).
-    return newOrderKey;
-};
-
-export const subscribeToOrders = (callback: (orders: Order[]) => void) => {
-    const ordersRef = ref(db, 'orders');
-    return onValue(ordersRef, (snapshot) => {
-        const data = snapshot.val();
-        const ordersList: Order[] = data ? Object.values(data) : [];
-        
-        // --- Auto Cancel Logic ---
-        const now = Date.now();
-        const TIMEOUT_MS = 6 * 60 * 60 * 1000; // 6 Hours
-        let needsUpdate = false;
-        const updates: any = {};
-
-        ordersList.forEach(order => {
-            // If pending and older than 6h, set to Cancelled
-            if (order.status === OrderStatus.PENDING && (now - order.timestamp > TIMEOUT_MS)) {
-                updates[`/orders/${order.id}/status`] = OrderStatus.CANCELLED;
-                needsUpdate = true;
-            }
-        });
-
-        if (needsUpdate) {
-            // Perform the update silently in background
-            update(ref(db), updates).catch(err => console.error("Auto-cancel error:", err));
-        }
-
-        // Sort by timestamp desc
-        ordersList.sort((a, b) => b.timestamp - a.timestamp);
-        callback(ordersList);
+        msgs.sort((a, b) => b.timestamp - a.timestamp);
+        callback(msgs);
     });
+    return () => unsubscribe();
 };
 
-export const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
-    const updates: any = {};
-    let finalStatus = status;
-    const dbRef = ref(db);
-    
-    // Logic: Deduct stock when status becomes PAID or COMPLETED (e.g., manual complete)
-    // AND Send Voucher Message if Product has Custom Message
-    if (status === OrderStatus.PAID || status === OrderStatus.COMPLETED) {
-        const orderSnapshot = await get(child(dbRef, 'orders/' + orderId));
-        
-        if (orderSnapshot.exists()) {
-            const order = orderSnapshot.val() as Order;
-            
-            // Prevent double deduction if status was already PAID or later
-            if (order.status === OrderStatus.PENDING || order.status === OrderStatus.CANCELLED || order.status === OrderStatus.REJECTED) {
-                const item = order.items[0]; // Assuming single item order for now
-                
-                // 1. Deduct Stock
-                const productRef = child(dbRef, 'products/' + item.product.id);
-                const productSnapshot = await get(productRef);
-                
-                if (productSnapshot.exists()) {
-                    const currentProduct = productSnapshot.val() as Product;
-                    // Deduct by Order Quantity
-                    const newStock = Math.max(0, currentProduct.stock - item.quantity);
-                    const newSold = currentProduct.totalSold + item.quantity;
-                    
-                    updates['/products/' + item.product.id + '/stock'] = newStock;
-                    updates['/products/' + item.product.id + '/totalSold'] = newSold;
-                }
-
-                // 2. Digital Product Auto-Complete Logic
-                // If product is digital and we are marking as PAID, auto jump to COMPLETED
-                if (status === OrderStatus.PAID && item.product.category === 'digital') {
-                    finalStatus = OrderStatus.COMPLETED;
-                }
-
-                // 3. AUTOMATIC VOUCHER MESSAGE LOGIC
-                // Triggered only when Status becomes PAID (or COMPLETED via auto-jump)
-                if (item.product.hasCustomMessage && item.product.customMessage) {
-                     // Generate Vouchers based on Quantity
-                    let voucherCodes = [];
-                    for(let i=0; i < item.quantity; i++) {
-                         // Generate a simple alphanumeric code: V-XXXX-XXXX
-                         const code = 'V-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-                         voucherCodes.push(code);
-                    }
-
-                    const voucherListStr = voucherCodes.map((c, idx) => `Item ${idx + 1}: ${c}`).join('\n');
-                    const finalMessage = `${item.product.customMessage}\n\n----------------\nKODE VOUCHER ANDA:\n${voucherListStr}\n----------------\n\nSimpan kode ini dan tunjukkan ke admin atau gunakan sesuai instruksi.`;
-
-                    // Send automated message
-                    await sendMessage(
-                        order.userId,
-                        `Voucher: ${item.product.name}`,
-                        `Pembayaran Dikonfirmasi! Terima kasih telah membeli ${item.quantity}x ${item.product.name}.\n\n${finalMessage}`,
-                        true
-                    );
-                }
-            }
-        }
-    }
-
-    updates['/orders/' + orderId + '/status'] = finalStatus;
-    await update(ref(db), updates);
+export const markMessageAsRead = async (msgId: string) => {
+    await update(ref(database, `messages/${msgId}`), { isRead: true });
 };
 
-export const updateOrderProof = async (orderId: string, base64Image: string) => {
-    const updates: any = {};
-    updates[`/orders/${orderId}/paymentProof`] = base64Image;
-    await update(ref(db), updates);
-};
-
-// Soft delete for User (hides from UI, keeps in DB for Admin)
-export const hideOrderForUser = async (orderId: string) => {
-    const updates: any = {};
-    updates[`/orders/${orderId}/hiddenForUser`] = true;
-    await update(ref(db), updates);
-};
-
-// Hard delete for Admin (removes from DB, affects Overview)
-export const deleteOrder = async (orderId: string) => {
-    await remove(ref(db, `orders/${orderId}`));
-};
-
-// NEW: Delete ALL orders for a specific user (Hard Delete)
-export const deleteAllOrdersByUser = async (userId: string) => {
-    const ordersRef = ref(db, 'orders');
-    const snapshot = await get(ordersRef);
-    if (snapshot.exists()) {
-        const updates: any = {};
-        snapshot.forEach((child) => {
-            const order = child.val();
-            if (order.userId === userId) {
-                updates[child.key!] = null; // Remove this order
-            }
-        });
-        // Perform batch update if there are items to remove
-        if (Object.keys(updates).length > 0) {
-            await update(ordersRef, updates);
-        }
-    }
-};
-
-
-// --- User Services ---
-
-export const registerUser = async (email: string, username: string, password: string): Promise<User> => {
-    // Simple insecure auth for demo
-    const usersRef = ref(db, 'users');
-    const snapshot = await get(usersRef);
-    const users = snapshot.val();
-    
-    if (users) {
-        const existing = Object.values(users).find((u: any) => u.email === email);
-        if (existing) throw new Error("Email already registered");
-    }
-
-    const newUserId = push(child(ref(db), 'users')).key;
-    const newUser: User & { password: string } = { 
-        uid: newUserId!,
-        username,
-        email,
-        password,
-        lastSeen: Date.now(),
-        isActive: true
-    };
-
-    await set(ref(db, 'users/' + newUserId), newUser);
-    const { password: _, ...safeUser } = newUser;
-    return safeUser;
-};
-
-export const loginUser = async (email: string, password: string): Promise<User> => {
-    const usersRef = ref(db, 'users');
-    const snapshot = await get(usersRef);
-    const users = snapshot.val();
-
-    if (!users) throw new Error("User not found");
-
-    const user: any = Object.values(users).find((u: any) => u.email === email && u.password === password);
-    if (!user) throw new Error("Invalid credentials");
-
-    if (!user.isActive) throw new Error("Akun dinonaktifkan oleh Admin");
-
-    // Update last seen
-    await update(ref(db, 'users/' + user.uid), { lastSeen: Date.now() });
-
-    const { password: _, ...safeUser } = user;
-    return safeUser;
-};
-
-export const updateUserProfile = async (uid: string, data: Partial<User>) => {
-    await update(ref(db, 'users/' + uid), data);
-};
-
-export const subscribeToUsers = (callback: (users: User[]) => void) => {
-    const usersRef = ref(db, 'users');
-    return onValue(usersRef, (snapshot) => {
-        const data = snapshot.val();
-        const usersList: User[] = data ? Object.values(data) : [];
-        callback(usersList);
-    });
-};
-
-export const deleteUser = async (uid: string) => {
-    await remove(ref(db, `users/${uid}`));
-};
-
-export const toggleUserStatus = async (uid: string, currentStatus: boolean) => {
-    await update(ref(db, `users/${uid}`), { isActive: !currentStatus });
-};
-
-// --- Banner Services ---
-export const updateBanner = async (base64Image: string) => {
-    await update(ref(db), { '/settings/banner': base64Image });
-};
-
-export const subscribeToBanner = (callback: (banner: string | null) => void) => {
-    return onValue(ref(db, 'settings/banner'), (snapshot) => {
-        callback(snapshot.val());
-    });
-};
-
-// --- Invoice Settings Services ---
-export const updateInvoiceSettings = async (settings: InvoiceSettings) => {
-    await update(ref(db), { '/settings/invoice': settings });
-};
-
-export const subscribeToInvoiceSettings = (callback: (settings: InvoiceSettings | null) => void) => {
-    return onValue(ref(db, 'settings/invoice'), (snapshot) => {
-        callback(snapshot.val());
-    });
+export const deleteMessage = async (msgId: string) => {
+    await remove(ref(database, `messages/${msgId}`));
 };
