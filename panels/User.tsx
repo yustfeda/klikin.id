@@ -14,9 +14,6 @@ const CachedImage = ({ src, alt, className }: { src: string, alt: string, classN
 
     useEffect(() => {
         if (!src) return;
-
-        // Simple hash function to generate a key from the base64 content length + start/end chars
-        // to avoid storing the whole base64 string as the key itself.
         const generateKey = (str: string) => {
             return `img_${str.length}_${str.slice(0, 20)}_${str.slice(-20)}`;
         };
@@ -26,16 +23,12 @@ const CachedImage = ({ src, alt, className }: { src: string, alt: string, classN
         try {
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
-                // If found in local storage, use it
                 setImgSrc(cached);
             } else {
-                // If not found, save it to local storage then use it
-                // We verify it's a valid base64 string (usually starts with data:image)
                 if (src.startsWith('data:image')) {
                     try {
                         localStorage.setItem(cacheKey, src);
                     } catch (e) {
-                        // Quota exceeded or error, just use the src directly without caching
                         console.warn("LocalStorage quota exceeded, skipping image cache");
                     }
                 }
@@ -91,12 +84,10 @@ const OrderCountdown = ({ timestamp }: { timestamp: number }) => {
     const [isExpired, setIsExpired] = useState(false);
 
     useEffect(() => {
-        const deadline = timestamp + (6 * 60 * 60 * 1000); // 6 hours from order time
-        
+        const deadline = timestamp + (6 * 60 * 60 * 1000);
         const updateTimer = () => {
             const now = Date.now();
             const diff = deadline - now;
-
             if (diff <= 0) {
                 setTimeLeft('00:00:00');
                 setIsExpired(true);
@@ -107,10 +98,8 @@ const OrderCountdown = ({ timestamp }: { timestamp: number }) => {
                 setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
             }
         };
-
-        updateTimer(); // Run immediately
+        updateTimer();
         const interval = setInterval(updateTimer, 1000);
-
         return () => clearInterval(interval);
     }, [timestamp]);
 
@@ -124,42 +113,47 @@ const OrderCountdown = ({ timestamp }: { timestamp: number }) => {
 
 const ProductCountdown = ({ targetDate }: { targetDate: number }) => {
     const [timeLeft, setTimeLeft] = useState('');
+    const [isHidden, setIsHidden] = useState(false);
 
     useEffect(() => {
-        if (!targetDate) return;
+        if (!targetDate) {
+            setIsHidden(true);
+            return;
+        }
         
         const updateTimer = () => {
-            const now = Date.now();
-            const diff = targetDate - now;
-
-            if (diff <= 0) {
-                setTimeLeft('Available Now');
-            } else {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                
-                if (days > 0) {
-                    setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+            try {
+                const now = Date.now();
+                const diff = targetDate - now;
+                if (diff <= 0) {
+                    setIsHidden(true);
                 } else {
-                    setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+                    setIsHidden(false);
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    if (days > 0) {
+                        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+                    } else {
+                        setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+                    }
                 }
+            } catch (e) {
+                setIsHidden(true);
             }
         };
-
         updateTimer();
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
     }, [targetDate]);
 
-    if (!targetDate) return null;
+    if (isHidden || !targetDate) return null;
 
     return (
-        <div className="bg-brand-yellow/20 px-2 py-0.5 rounded-md inline-block border border-brand-yellow/50 shadow-sm transform translate-y-1">
-            <div className="text-center text-yellow-800 font-bold text-[10px] tracking-tight leading-none">
-                {timeLeft}
-            </div>
+        <div className="text-right text-brand-red font-bold text-[10px] tracking-tight leading-none shadow-sm px-1">
+            {timeLeft}
         </div>
     );
 };
@@ -286,6 +280,29 @@ const SwipeableCartItem: React.FC<{ item: {product: Product, quantity: number}, 
 };
 
 const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCart: () => void }> = ({ product, onBuy, onAddToCart }) => {
+    const [isReleased, setIsReleased] = useState(() => {
+         if (!product.isComingSoon) return true;
+         if ((product.releaseDate || 0) <= 0) return false;
+         return Date.now() >= product.releaseDate!;
+    });
+
+    useEffect(() => {
+         const check = () => {
+             if (!product.isComingSoon) return true;
+             if ((product.releaseDate || 0) <= 0) return false;
+             return Date.now() >= product.releaseDate!;
+         };
+         setIsReleased(check());
+
+         if (product.isComingSoon && (product.releaseDate || 0) > 0) {
+             const diff = product.releaseDate! - Date.now();
+             if (diff > 0) {
+                 const timer = setTimeout(() => setIsReleased(true), diff);
+                 return () => clearTimeout(timer);
+             }
+         }
+    }, [product.isComingSoon, product.releaseDate]);
+
     const sold = product.totalSold;
     const remaining = product.stock;
     const stockText = `${sold} / ${remaining}`;
@@ -304,19 +321,16 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
         }
     };
 
-    // Adjusted button: Large enough for mobile touch, clear text
-    // Added mx-2 for consistent spacing with stock bar
+    // Button Style: Light Blue (Blue 400)
     const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
         const isClosed = product.isSaleClosed || product.stock === 0;
+        const effectivelyComingSoon = product.isComingSoon && !isReleased;
         
-        if (product.isComingSoon && !isClosed) {
+        if (effectivelyComingSoon && !isClosed) {
              return (
-                <div className="flex flex-col w-full px-2 mb-4 mt-auto">
-                     <div className="flex justify-center mb-1">
-                        {product.releaseDate && <ProductCountdown targetDate={product.releaseDate} />}
-                    </div>
+                <div className="w-full px-2 mb-4 mt-auto">
                     <div className={`w-full h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex items-center justify-center gap-1.5 bg-yellow-100 text-yellow-800 border border-yellow-200 cursor-not-allowed`}>
                         <ClockIcon />
                         <span className="uppercase">Segera Hadir</span>
@@ -337,7 +351,8 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
             );
         }
         return (
-             <button onClick={onBuy} className={`${buttonBaseClass} bg-green-600 text-white border-b-2 border-green-700 hover:bg-green-700 hover:shadow-green-600/50`}>
+             // Light Blue Button
+             <button onClick={onBuy} className={`${buttonBaseClass} bg-blue-400 text-white border-b-2 border-blue-500 hover:bg-blue-500 hover:shadow-blue-400/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
                 <span className="transform transition-transform duration-300 group-hover:translate-x-1">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
@@ -349,8 +364,8 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
     };
 
     return (
-        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
-             {/* Image Container: Compact on Desktop with md:h-36 */}
+        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10 pb-1">
+             {/* Image Container */}
              <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
@@ -361,7 +376,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                         </div>
                     </div>
                 )}
-                {product.isComingSoon && !product.isSaleClosed && product.stock > 0 && (
+                {product.isComingSoon && !isReleased && !product.isSaleClosed && product.stock > 0 && (
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
                             <span className="text-brand-orange font-bold text-[10px]">SOON</span>
@@ -369,22 +384,20 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                     </div>
                 )}
 
-                {/* Category Badge */}
                 <div className="absolute top-2 left-2 z-20">
                     <span className={`text-[8px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold shadow-sm ${product.category === 'digital' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
                         {product.category === 'digital' ? 'Web / Digital' : 'Fisik'}
                     </span>
                 </div>
 
-                {/* Badges */}
                 <div className="absolute bottom-2 left-0 w-full px-2 flex justify-between items-end pointer-events-none z-20">
                      {product.discountPercent > 0 && (
-                        <div className="bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
+                        <div className="bg-red-600 text-white text-xs font-extrabold px-2 py-0.5 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
                             {product.discountPercent}% OFF
                         </div>
                     )}
                      {product.saleTag && (
-                        <div className="ml-auto bg-brand-blue text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
+                        <div className="ml-auto bg-brand-blue text-white text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
                             <SunIcon />
                             {product.saleTag}
                         </div>
@@ -392,16 +405,15 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                 </div>
             </div>
 
-            {/* Content Wrapper: p-0 for compact control */}
             <div className="flex flex-col flex-grow relative z-10 bg-white">
-                {/* Title */}
-                <div className="px-2 pt-2 mb-4">
-                     <h3 className="font-bold text-lg sm:text-xl mb-1 text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors truncate">{product.name}</h3>
+                {/* Title increased: text-xl (mobile), text-2xl (desktop) */}
+                <div className="px-2 pt-3 mb-4">
+                     <h3 className="font-bold text-xl sm:text-2xl mb-1 text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors truncate">{product.name}</h3>
                 </div>
 
-                {/* Extra Info Section - mx-2 for spacing from edges, my-4 for vertical spacing */}
+                {/* Extra Info Spacing increased: my-5, space-y-3 (mobile) */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="my-4 space-y-1 bg-gray-50 py-1 px-2 mx-2 rounded border border-gray-100">
+                    <div className="my-5 space-y-3 sm:space-y-1 bg-gray-50 py-1.5 px-2 mx-2 rounded border border-gray-100">
                          {product.extraInfo.map((info, idx) => (
                             <div key={idx} className="flex items-center gap-1.5 text-[9px] text-gray-700">
                                 <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
@@ -417,33 +429,32 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                 )}
 
                 <div className="text-left relative px-2 mt-auto">
-                    <div className="flex flex-col mb-4">
-                         {/* Original Price (Strikethrough) - Left Aligned */}
+                    <div className="flex flex-col mb-6">
+                         {/* Price Increased */}
                          {product.originalPrice > product.discountedPrice && (
-                            <span className="text-[10px] text-gray-400 line-through text-left block mb-0.5">Rp{(product.originalPrice).toLocaleString('id-ID')}</span>
+                            <span className="text-sm text-gray-400 line-through text-left block mb-0.5">Rp{(product.originalPrice).toLocaleString('id-ID')}</span>
                         )}
                         
-                        {/* Selling Price & Cart - Left Aligned Price */}
-                        <div className="flex items-center justify-between min-h-[20px]">
-                             <p className="text-sm sm:text-base font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
+                        <div className="flex items-center justify-between min-h-[24px]">
+                             <p className="text-xl sm:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
 
-                             {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
+                             {!product.isSaleClosed && (!product.isComingSoon || isReleased) && product.stock > 0 && (
                                  <button 
                                     onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
-                                    className="w-7 h-7 p-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-brand-yellow text-gray-600 hover:text-brand-red transition-colors group/cart animate-ring-interval flex items-center justify-center"
+                                    className="w-8 h-8 p-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-brand-yellow text-gray-600 hover:text-brand-red transition-colors group/cart animate-ring-interval flex items-center justify-center"
                                     title="Tambah ke Keranjang"
                                 >
-                                    <div className="w-4 h-4 [&>svg]:w-full [&>svg]:h-full"><CartIcon /></div>
+                                    <div className="w-5 h-5 [&>svg]:w-full [&>svg]:h-full"><CartIcon /></div>
                                 </button>
                              )}
                         </div>
                     </div>
 
-                    {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
-                         // Stock Bar: Aligned with Button (mx-2 is on button, here we are inside px-2 container of parent div, so it aligns)
-                        <div className="relative mb-4">
+                    {!product.isSaleClosed && (!product.isComingSoon || isReleased) && product.stock > 0 && (
+                         // Stock Bar: h-2 (mobile), sm:h-1.5 (desktop)
+                        <div className="relative mb-6">
                             <div className="flex items-center justify-between gap-1 mb-1">
-                                <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden border border-gray-200">
+                                <div className="w-full bg-gray-100 rounded-full h-2 sm:h-1.5 overflow-hidden border border-gray-200">
                                     <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
                                 </div>
                                 <p className="text-xs text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
@@ -452,13 +463,18 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                     )}
                 </div>
             </div>
+            
+            {/* Countdown moved to absolute position above button to fix disappearing bug */}
+            {product.isComingSoon && !isReleased && !product.isSaleClosed && (product.releaseDate || 0) > 0 && (
+                 <div className="absolute bottom-14 right-3 z-20 pointer-events-none">
+                    <ProductCountdown targetDate={product.releaseDate!} />
+                 </div>
+            )}
+            
             {getButton()}
         </div>
     );
 };
-
-// ... rest of the file (ConfirmModal, SuccessModal, CheckoutModal, UserPanel, UserInbox, UserHome, UserProducts, UserCart, UserPayment, UserOrders, UserProfile) remains identical, just ensuring UserProductCard is updated. 
-// The rest of the components are kept exactly as they were.
 
 const ConfirmModal: React.FC<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void }> = ({ isOpen, title, message, onConfirm, onCancel }) => {
     if (!isOpen) return null;
@@ -604,8 +620,6 @@ const UserPanel: React.FC = () => {
              const pending = myOrders.filter(o => o.status === OrderStatus.PENDING).length;
              const activeProcess = myOrders.filter(o => o.status === OrderStatus.PAID || o.status === OrderStatus.SHIPPED).length;
              const cancelled = myOrders.filter(o => o.status === OrderStatus.CANCELLED || o.status === OrderStatus.REJECTED).length;
-             const shipped = myOrders.filter(o => o.status === OrderStatus.SHIPPED).length;
-             const completed = myOrders.filter(o => o.status === OrderStatus.COMPLETED).length;
 
              setPendingCount(pending);
              setProcessCount(activeProcess); 
@@ -840,9 +854,8 @@ Mohon diproses. Terima kasih!`;
     );
 };
 
-// ... rest of existing components (UserInbox, UserHome, UserProducts, UserCart, UserPayment, UserOrders, UserProfile)
+// ... rest of components (UserInbox, UserHome, UserProducts, etc.) need no structural changes except if using UserProductCard
 const UserInbox: React.FC<{ messages: Message[] }> = ({ messages }) => {
-    // ... UserInbox implementation remains same
     const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
 
     const openWhatsapp = () => {
@@ -987,7 +1000,6 @@ const UserHome: React.FC<{
                 </button>
             </div>
              <h3 className="text-sm font-bold mb-4 text-gray-800 text-left pl-2 border-l-4 border-brand-orange">Rekomendasi Untuk Anda</h3>
-             {/* Updated Grid: 5 columns on XL screens */}
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
                 {products.slice(0, 5).map(p => (
                     <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
@@ -1000,7 +1012,6 @@ const UserHome: React.FC<{
 const UserProducts: React.FC<{ products: Product[], onAddToCart: (p: Product) => void, onBuy: (p: Product) => void }> = ({ products, onAddToCart, onBuy }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Lengkap</h2>
-        {/* Updated Grid: 5 columns on XL screens */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                  <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => onAddToCart(p)} />
@@ -1010,7 +1021,6 @@ const UserProducts: React.FC<{ products: Product[], onAddToCart: (p: Product) =>
 );
 
 const UserCart: React.FC<{ cart: {product: Product, quantity: number}[], onRemove: (id: string) => void, onBuy: (p: Product, qty: number) => void }> = ({ cart, onRemove, onBuy }) => (
-    // ... UserCart implementation remains same
     <div className="py-2 max-w-2xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><CartIcon /> Keranjang Belanja</h2>
         {cart.length === 0 ? (
@@ -1027,9 +1037,8 @@ const UserCart: React.FC<{ cart: {product: Product, quantity: number}[], onRemov
         )}
     </div>
 );
-// ... (UserPayment, UserOrders, UserProfile, and other component implementations remain unchanged)
+
 const UserPayment = () => {
-    // ... UserPayment implementation remains same
     const [orders, setOrders] = useState<Order[]>([]);
     const [cancelId, setCancelId] = useState<string | null>(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -1137,7 +1146,6 @@ const UserPayment = () => {
 };
 
 const UserOrders = () => {
-    // ... UserOrders implementation remains same
     const [orders, setOrders] = useState<Order[]>([]);
     const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -1160,17 +1168,29 @@ const UserOrders = () => {
         }
         const element = invoiceRef.current;
         const dateStr = new Date(order.timestamp).toLocaleDateString('id-ID');
-        (document.getElementById('inv-no') as HTMLSpanElement).innerText = order.id.substring(1, 8).toUpperCase();
-        (document.getElementById('inv-date') as HTMLSpanElement).innerText = dateStr;
-        (document.getElementById('bill-name') as HTMLElement).innerText = order.shippingDetails?.name || order.username;
-        (document.getElementById('bill-email') as HTMLElement).innerText = auth.currentUser?.email || 'N/A';
-        (document.getElementById('item-name') as HTMLElement).innerText = order.items[0].product.name;
-        (document.getElementById('item-qty') as HTMLElement).innerText = order.items[0].quantity.toString();
+        
+        // Helper to safe set innerText
+        const setText = (id: string, text: string) => {
+            const el = document.getElementById(id);
+            if(el) el.innerText = text;
+        };
+
+        setText('inv-no', `#${order.id.substring(1, 8).toUpperCase()}`);
+        setText('inv-date', dateStr);
+        setText('bill-name', order.shippingDetails?.name || order.username);
+        setText('bill-address', order.shippingDetails?.address || auth.currentUser?.email || '');
+        setText('top-total', `Rp${order.totalPrice.toLocaleString('id-ID')}`);
+
+        setText('item-name', order.items[0].product.name);
+        setText('item-qty', order.items[0].quantity.toString());
+        
         const effectiveUnitPrice = order.totalPrice / order.items[0].quantity;
-        (document.getElementById('item-price') as HTMLElement).innerText = `Rp${effectiveUnitPrice.toLocaleString('id-ID')}`;
-        (document.getElementById('item-total') as HTMLElement).innerText = `Rp${order.totalPrice.toLocaleString('id-ID')}`;
-        (document.getElementById('inv-subtotal') as HTMLElement).innerText = `Rp${order.totalPrice.toLocaleString('id-ID')}`;
-        (document.getElementById('inv-total') as HTMLElement).innerText = `Rp${order.totalPrice.toLocaleString('id-ID')}`;
+        setText('item-price', `Rp${effectiveUnitPrice.toLocaleString('id-ID')}`);
+        setText('item-total', `Rp${order.totalPrice.toLocaleString('id-ID')}`);
+        
+        setText('inv-subtotal', `Rp${order.totalPrice.toLocaleString('id-ID')}`);
+        setText('inv-total', `Rp${order.totalPrice.toLocaleString('id-ID')}`);
+
         element.style.display = 'block';
         try {
             const canvas = await html2canvas(element, { scale: 2 });
@@ -1252,7 +1272,7 @@ const UserOrders = () => {
         <div className="py-2 max-w-3xl mx-auto">
             <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><OrdersIcon /> Riwayat Pesanan</h2>
              {orders.length === 0 ? (
-                 <div className="text-center py-8 bg-white rounded-lg border border-dashed border-gray-300">
+                 <div className="text-center py-8 bg-white rounded-lg border border-gray-300 border-dashed">
                     <p className="text-gray-500 text-xs">Belum ada riwayat pesanan.</p>
                 </div>
             ) : (
@@ -1302,93 +1322,129 @@ const UserOrders = () => {
             )}
             
             <ConfirmModal isOpen={!!deleteId} title="Hapus Riwayat" message="Apakah anda yakin ingin menghapus riwayat pesanan ini?" onConfirm={handleConfirmDelete} onCancel={() => setDeleteId(null)} />
-            <div ref={invoiceRef} style={{ display: 'none', width: '794px', minHeight: '1123px', backgroundColor: 'white', padding: '40px', position: 'absolute', top: 0, left: '-9999px' }}>
-               {/* Invoice Template Code (unchanged structure, hidden from UI) */}
-               <div className="flex justify-between items-start mb-12 relative">
-                    <div className="absolute -top-10 -left-10 w-32 h-32 bg-brand-red rounded-full opacity-90 z-0"></div>
-                    <div className="relative z-10 pt-4">
-                         {invoiceSettings?.logoUrl ? (
-                             <img src={invoiceSettings.logoUrl} alt="Logo" className="h-16 object-contain mb-2" />
-                         ) : <h2 className="text-2xl font-bold mb-2">{invoiceSettings?.companyName || 'LOGO APLIKASI'}</h2>}
+            
+            {/* REDESIGNED INVOICE TEMPLATE */}
+            <div ref={invoiceRef} style={{ display: 'none', width: '794px', minHeight: '1123px', backgroundColor: 'white', position: 'absolute', top: 0, left: '-9999px' }} className="font-sans text-[#1a1a3d]">
+                {/* Header Area */}
+                <div className="flex h-40">
+                    {/* Left: Logo */}
+                    <div className="w-[40%] flex items-center pl-12 pt-8">
+                        {invoiceSettings?.logoUrl ? (
+                            <img src={invoiceSettings.logoUrl} alt="Logo" className="max-w-[200px] max-h-[80px] object-contain" />
+                        ) : (
+                            <h1 className="text-4xl font-extrabold uppercase tracking-wide">{invoiceSettings?.companyName || 'LOGO TOKO'}</h1>
+                        )}
                     </div>
                     
-                    <div className="text-right relative z-10">
-                        <div className="absolute -top-10 -right-10 w-[400px] h-40 bg-black rounded-bl-full flex items-center justify-center pr-10 pt-10">
-                            <h1 className="text-6xl font-bold text-white tracking-widest">INVOICE</h1>
-                        </div>
+                    {/* Right: Dark Shape */}
+                    <div className="w-[60%] bg-[#1a1a3d] relative h-full flex items-center justify-end pr-12" 
+                        style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}>
+                        <h1 className="text-5xl font-bold text-white tracking-widest">INVOICE</h1>
                     </div>
                 </div>
-                <div className="mt-32 mb-8 px-4">
-                    <h3 className="text-sm font-bold text-gray-600 mb-1">BILL TO:</h3>
-                    <h2 id="bill-name" className="text-2xl font-bold text-brand-red mb-1">NAMA PEMBELI</h2>
-                    <p id="bill-email" className="text-gray-600">email@example.com</p>
-                    <div className="flex justify-end -mt-10">
-                        <div className="text-right">
-                             <div className="flex justify-between w-64 mb-1">
-                                 <span className="font-bold">Invoice No :</span>
-                                 <span id="inv-no" className="text-gray-600">#12345</span>
-                             </div>
-                             <div className="flex justify-between w-64">
-                                 <span className="font-bold">Invoice Date :</span>
-                                 <span id="inv-date" className="text-gray-600">DD/MM/YYYY</span>
-                             </div>
-                        </div>
+                
+                {/* Yellow Accent Strip */}
+                <div className="flex justify-end mt-[-1px]">
+                    <div className="w-[40%] h-4 bg-[#fbbf24]" style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}></div>
+                </div>
+
+                {/* Invoice Meta Data Grid */}
+                <div className="grid grid-cols-3 px-12 mt-16 items-start">
+                    {/* Col 1: Invoice To */}
+                    <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider mb-1.5">INVOICE TO :</h3>
+                        <h2 id="bill-name" className="text-2xl font-bold mb-1 break-words pr-4 uppercase">USER NAME</h2>
+                        <p id="bill-address" className="text-sm text-gray-500 leading-relaxed w-3/4">Address...</p>
+                    </div>
+
+                    {/* Col 2: Date (Centered) */}
+                    <div className="text-center pt-1">
+                        <h3 className="text-xs font-bold uppercase tracking-wider mb-1.5">Tanggal :</h3>
+                        <p id="inv-date" className="text-lg font-semibold">DD/MM/YYYY</p>
+                        <p className="text-xs text-gray-400 mt-1">No: <span id="inv-no">#12345</span></p>
+                    </div>
+
+                    {/* Col 3: Total Due (Right) */}
+                    <div className="text-right pt-1">
+                        <h3 className="text-xs font-bold uppercase tracking-wider mb-1.5">TOTAL DUE :</h3>
+                        <h2 id="top-total" className="text-3xl font-bold">Rp.0</h2>
                     </div>
                 </div>
-                <div className="px-4 mb-12">
+
+                {/* Table */}
+                <div className="px-12 mt-12">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-black text-white rounded-full overflow-hidden">
-                                <th className="py-3 px-6 text-left rounded-l-full font-bold text-sm uppercase">Item Description</th>
-                                <th className="py-3 px-4 text-center font-bold text-sm uppercase">Qty</th>
-                                <th className="py-3 px-4 text-right font-bold text-sm uppercase">Price</th>
-                                <th className="py-3 px-6 text-right rounded-r-full bg-brand-red font-bold text-sm uppercase">Total</th>
+                            <tr className="bg-[#1a1a3d] text-white">
+                                <th className="py-3 px-5 text-left font-bold uppercase text-sm w-1/2">Description</th>
+                                <th className="py-3 px-4 text-center font-bold uppercase text-sm">Qty</th>
+                                <th className="py-3 px-4 text-right font-bold uppercase text-sm">Price</th>
+                                <th className="py-3 px-5 text-right font-bold uppercase text-sm">Total</th>
                             </tr>
                         </thead>
-                        <tbody className="text-gray-600">
-                            <tr className="bg-gray-50">
-                                <td id="item-name" className="py-4 px-6 font-medium">Product Name</td>
-                                <td id="item-qty" className="py-4 px-4 text-center">1</td>
-                                <td id="item-price" className="py-4 px-4 text-right">Rp0</td>
-                                <td id="item-total" className="py-4 px-6 text-right font-bold text-gray-800">Rp0</td>
+                        <tbody className="text-gray-700">
+                            <tr className="border-b border-gray-200 even:bg-gray-50">
+                                <td id="item-name" className="py-4 px-5 font-medium text-sm">Item Name</td>
+                                <td id="item-qty" className="py-4 px-4 text-center text-sm font-bold">1</td>
+                                <td id="item-price" className="py-4 px-4 text-right text-sm">Rp0</td>
+                                <td id="item-total" className="py-4 px-5 text-right text-sm font-bold text-[#1a1a3d]">Rp0</td>
                             </tr>
+                            {/* Filler rows for aesthetics */}
+                            <tr className="border-b border-gray-200 even:bg-gray-50 h-12"><td colSpan={4}></td></tr>
+                            <tr className="border-b border-gray-200 even:bg-gray-50 h-12"><td colSpan={4}></td></tr>
+                            <tr className="border-b border-gray-200 even:bg-gray-50 h-12"><td colSpan={4}></td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div className="flex justify-between px-4 items-end">
-                    <div className="w-1/2">
-                        <h3 className="font-bold text-lg mb-2">Payment Information:</h3>
-                        <div className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
-                            {invoiceSettings?.bankDetails || 'Bank Info Not Set'}
+
+                {/* Footer Area */}
+                <div className="flex justify-between px-12 mt-12 pb-24">
+                    {/* Left: Payment Method */}
+                    <div className="w-[45%]">
+                        <h4 className="text-sm font-bold mb-3 uppercase tracking-wide">Payment Method</h4>
+                        <div className="text-sm text-gray-600 font-medium whitespace-pre-line leading-7">
+                            {invoiceSettings?.bankDetails || 'Bank BCA: 123456789\nA.N Owner'}
                         </div>
-                         <div className="mt-8 space-y-2 text-sm text-gray-600">
-                            <div className="flex items-center gap-2"><span>{invoiceSettings?.footerNote?.split('\n')[0] || 'Contact Info'}</span></div>
-                            <div className="flex items-center gap-2"><span>{invoiceSettings?.companyAddress || 'Address Info'}</span></div>
+                        <div className="mt-6 text-sm text-gray-500">
+                            <div className="mb-1"><span className="font-bold italic text-gray-800">Email : </span>{invoiceSettings?.footerNote || 'support@kelikin.com'}</div>
+                            <div><span className="font-bold italic text-gray-800">Address : </span>{invoiceSettings?.companyAddress || 'Jakarta, Indonesia'}</div>
                         </div>
                     </div>
-                    <div className="w-1/2 pl-10">
-                         <div className="bg-black text-white rounded-l-full py-6 px-8 mb-8">
-                             <div className="flex justify-between mb-2"><span>Subtotal</span><span id="inv-subtotal">Rp0</span></div>
-                             <div className="flex justify-between mb-2"><span>Tax</span><span>0%</span></div>
-                             <div className="flex justify-between font-bold text-xl text-brand-red mt-4"><span>TOTAL</span><span id="inv-total">Rp0</span></div>
-                         </div>
-                         <div className="text-center pr-10">
-                             {invoiceSettings?.signatureUrl && <img src={invoiceSettings.signatureUrl} alt="Sig" className="h-16 mx-auto mb-2" />}
-                             <div className="border-t border-gray-400 w-48 mx-auto"></div>
-                             <p className="font-bold mt-2">{invoiceSettings?.ownerName || 'Owner'}</p>
-                         </div>
+
+                    {/* Right: Totals */}
+                    <div className="w-[40%]">
+                        <div className="flex justify-between mb-3 text-sm font-bold text-gray-600 border-b border-gray-100 pb-2">
+                            <span>Sub-total :</span>
+                            <span id="inv-subtotal">Rp.0</span>
+                        </div>
+                        <div className="flex justify-between mb-6 text-sm font-bold text-gray-600 border-b border-gray-100 pb-2">
+                            <span>Tax :</span>
+                            <span>-</span>
+                        </div>
+                        
+                        {/* Dark Box Total */}
+                        <div className="bg-[#1a1a3d] text-white p-4 flex justify-between items-center rounded-sm shadow-lg">
+                            <span className="font-bold text-lg">(Total)</span>
+                            <span id="inv-total" className="font-bold text-2xl">Rp.0</span>
+                        </div>
+                        
+                        {/* Signature */}
+                        <div className="mt-10 text-center pl-10">
+                            {invoiceSettings?.signatureUrl && <img src={invoiceSettings.signatureUrl} className="h-20 mx-auto object-contain" />}
+                            <div className="border-b border-gray-400 w-32 mx-auto mt-2"></div>
+                            <p className="font-bold text-sm mt-2 uppercase tracking-wide">{invoiceSettings?.ownerName || 'Admin'}</p>
+                        </div>
                     </div>
                 </div>
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-brand-red rounded-tr-full z-0"></div>
-                <div className="absolute bottom-0 left-20 w-20 h-20 bg-brand-orange rounded-full z-10"></div>
-                <div className="absolute bottom-0 right-0 w-32 h-32 bg-brand-orange rounded-tl-full z-0"></div>
+
+                {/* Bottom Bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-12 bg-[#1a1a3d]"></div>
             </div>
         </div>
     );
 };
 
 const UserProfile = () => {
-    // ... UserProfile implementation remains same
     const auth = useAuth();
     const [formData, setFormData] = useState({ username: auth.currentUser?.username || '', email: auth.currentUser?.email || '' });
 

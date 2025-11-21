@@ -342,8 +342,9 @@ const AdminPanel: React.FC = () => {
     );
 };
 
-// ... [ManageMessages, ManageSettings, Overview, ManageUsers Components remain same as before] ...
+// ... ManageMessages, ManageSettings, Overview remain identical ...
 const ManageMessages = () => {
+    // ... No logic changes needed for messages ...
     const [users, setUsers] = useState<User[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [targetUser, setTargetUser] = useState<string>(''); 
@@ -463,11 +464,11 @@ const ManageMessages = () => {
              {deleteMessageId && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-5 rounded-lg shadow-xl max-w-xs w-full animate-in zoom-in duration-200">
-                        <h3 className="text-base font-bold text-gray-800 mb-2">Hapus Pesan?</h3>
-                        <p className="text-gray-600 mb-4 text-[10px]">Apakah anda yakin ingin menghapus pesan ini?</p>
+                        <h3 className="text-base font-bold text-gray-800 mb-2">Konfirmasi Hapus</h3>
+                        <p className="text-gray-600 mb-4 text-[10px]">Hapus pesan ini?</p>
                         <div className="flex justify-end space-x-2">
                             <button onClick={() => setDeleteMessageId(null)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg font-bold text-[10px]">Tidak</button>
-                            <button onClick={() => handleDeleteMessage} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-[10px]">Ya, Hapus</button>
+                            <button onClick={handleDeleteMessage} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-[10px]">Ya</button>
                         </div>
                     </div>
                 </div>
@@ -475,7 +476,7 @@ const ManageMessages = () => {
         </div>
     );
 };
-
+// ... ManageSettings, Overview remain same ...
 const ManageSettings = () => {
     const [banner, setBanner] = useState<string | null>(null);
     const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings>({
@@ -568,7 +569,6 @@ const ManageSettings = () => {
 };
 
 const Overview = () => {
-    // ... (Overview component code unchanged) ...
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -747,7 +747,7 @@ const ManageUsers = () => {
                         <p className="text-gray-600 mb-4 text-[10px]">Hapus user ini permanen?</p>
                         <div className="flex justify-end space-x-2">
                             <button onClick={() => setDeleteConfirm(null)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg font-bold text-[10px]">Tidak</button>
-                            <button onClick={() => handleDelete(deleteConfirm)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-[10px]">Ya, Hapus</button>
+                            <button onClick={() => handleDelete(deleteConfirm)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-[10px]">Ya</button>
                         </div>
                     </div>
                 </div>
@@ -866,7 +866,6 @@ const ManageProducts = () => {
         if (!timestamp) return '';
         const date = new Date(timestamp);
         const pad = (n: number) => n < 10 ? '0' + n : n;
-        // Format YYYY-MM-DDTHH:mm
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     };
 
@@ -1062,8 +1061,8 @@ const ManageProducts = () => {
                         <h3 className="text-base font-bold text-gray-800 mb-2">Konfirmasi Hapus</h3>
                         <p className="text-gray-600 mb-4 text-[10px]">Hapus produk ini permanen?</p>
                         <div className="flex justify-end space-x-2">
-                            <button onClick={() => setDeleteConfirmId(null)} className="px-3 py-1.5 text-gray-600 rounded-lg font-bold text-[10px]">Tidak</button>
-                            <button onClick={() => handleDelete(deleteConfirmId)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg font-bold text-[10px]">Ya</button>
+                            <button onClick={() => setDeleteConfirmId(null)} className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg font-bold text-[10px]">Tidak</button>
+                            <button onClick={() => handleDelete(deleteConfirmId)} className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold text-[10px]">Ya</button>
                         </div>
                     </div>
                 </div>
@@ -1073,7 +1072,6 @@ const ManageProducts = () => {
 };
 
 const ManageOrders = () => {
-// ... existing ManageOrders code ...
     const [orders, setOrders] = useState<Order[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);

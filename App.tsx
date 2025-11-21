@@ -223,8 +223,8 @@ const App: React.FC = () => {
 
   return (
     <AuthContext.Provider value={authContextValue}>
-        {/* Global Text Size Adjusted: text-[10px] for mobile, text-sm for md/desktop */}
-        <div className="flex flex-col min-h-screen w-full bg-gray-50 text-[10px] md:text-sm">
+        {/* Global Background changed to bg-gray-200/gray-100 for contrast with white containers */}
+        <div className="flex flex-col min-h-screen w-full bg-gray-200 text-[10px] md:text-sm">
           <div className="flex-grow w-full flex flex-col relative">
             {showAdminLogin && panel !== PanelType.ADMIN ? (
                 <AdminLogin onSuccess={handleAdminLogin} />

@@ -39,27 +39,36 @@ const CachedImage = ({ src, alt, className }: { src: string, alt: string, classN
 
 const ProductCountdown = ({ targetDate }: { targetDate: number }) => {
     const [timeLeft, setTimeLeft] = useState('');
+    const [isHidden, setIsHidden] = useState(false);
 
     useEffect(() => {
-        if (!targetDate) return;
+        if (!targetDate) {
+            setIsHidden(true);
+            return;
+        }
         
         const updateTimer = () => {
-            const now = Date.now();
-            const diff = targetDate - now;
+            try {
+                const now = Date.now();
+                const diff = targetDate - now;
 
-            if (diff <= 0) {
-                setTimeLeft('Available Now');
-            } else {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                
-                if (days > 0) {
-                    setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+                if (diff <= 0) {
+                    setIsHidden(true);
                 } else {
-                    setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+                    setIsHidden(false);
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    
+                    if (days > 0) {
+                        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+                    } else {
+                        setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+                    }
                 }
+            } catch (e) {
+                setIsHidden(true);
             }
         };
 
@@ -68,16 +77,39 @@ const ProductCountdown = ({ targetDate }: { targetDate: number }) => {
         return () => clearInterval(interval);
     }, [targetDate]);
 
-    if (!targetDate) return null;
+    if (isHidden || !targetDate) return null;
 
     return (
-        <div className="text-center text-yellow-700 font-bold text-[10px] drop-shadow-sm mb-0.5">
+        <div className="text-right text-brand-red font-bold text-[10px] tracking-tight leading-none shadow-sm px-1">
             {timeLeft}
         </div>
     );
 };
 
 const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => void }> = ({ product, onAction }) => {
+    const [isReleased, setIsReleased] = useState(() => {
+         if (!product.isComingSoon) return true;
+         if ((product.releaseDate || 0) <= 0) return false;
+         return Date.now() >= product.releaseDate!;
+    });
+
+    useEffect(() => {
+         const check = () => {
+             if (!product.isComingSoon) return true;
+             if ((product.releaseDate || 0) <= 0) return false;
+             return Date.now() >= product.releaseDate!;
+         };
+         setIsReleased(check());
+
+         if (product.isComingSoon && (product.releaseDate || 0) > 0) {
+             const diff = product.releaseDate! - Date.now();
+             if (diff > 0) {
+                 const timer = setTimeout(() => setIsReleased(true), diff);
+                 return () => clearTimeout(timer);
+             }
+         }
+    }, [product.isComingSoon, product.releaseDate]);
+
     const sold = product.totalSold;
     const remaining = product.stock;
     const stockText = `${sold} / ${remaining}`;
@@ -96,16 +128,16 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
         }
     };
 
-    // Adjusted button width to match stock bar alignment (mx-2)
+    // Button: Default Red
     const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
         const isClosed = product.isSaleClosed || product.stock === 0;
+        const effectivelyComingSoon = product.isComingSoon && !isReleased;
         
-        if (product.isComingSoon && !isClosed) {
+        if (effectivelyComingSoon && !isClosed) {
              return (
                 <div className="flex flex-col w-full px-2 mb-4">
-                    {product.releaseDate && <ProductCountdown targetDate={product.releaseDate} />}
                     <div className={`w-full h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] shadow-sm flex items-center justify-center gap-1.5 bg-yellow-200 text-yellow-900 border-b-2 border-yellow-400 cursor-not-allowed`}>
                         <ClockIcon />
                         <span className="uppercase">Segera Hadir</span>
@@ -139,7 +171,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     return (
-        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10">
+        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10 pb-1">
             {/* Image: Smaller on Desktop (md:h-36) for compact look */}
             <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -151,7 +183,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                         </div>
                     </div>
                 )}
-                {product.isComingSoon && !product.isSaleClosed && product.stock > 0 && (
+                {product.isComingSoon && !isReleased && !product.isSaleClosed && product.stock > 0 && (
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
                             <span className="text-brand-orange font-bold text-[10px]">SOON</span>
@@ -159,38 +191,37 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                     </div>
                 )}
 
-                {/* Badges */}
-                <div className="absolute bottom-2 left-0 w-full px-2 flex justify-between items-end pointer-events-none z-20">
-                     {product.discountPercent > 0 && (
-                        <div className="bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
-                            {product.discountPercent}% OFF
-                        </div>
-                    )}
-                     {product.saleTag && (
-                        <div className="ml-auto bg-brand-blue text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
-                            <SunIcon />
-                            {product.saleTag}
-                        </div>
-                    )}
-                </div>
-                
                 <div className="absolute top-2 left-2 z-20">
                     <span className={`text-[8px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold shadow-sm ${product.category === 'digital' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
                         {product.category === 'digital' ? 'Web / Digital' : 'Fisik'}
                     </span>
                 </div>
+
+                <div className="absolute bottom-2 left-0 w-full px-2 flex justify-between items-end pointer-events-none z-20">
+                     {product.discountPercent > 0 && (
+                        <div className="bg-red-600 text-white text-xs font-extrabold px-2 py-0.5 rounded shadow-lg border border-white/20 transform -rotate-2 animate-pulse-slow">
+                            {product.discountPercent}% OFF
+                        </div>
+                    )}
+                     {product.saleTag && (
+                        <div className="ml-auto bg-brand-blue text-white text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wide flex items-center gap-1 shadow-lg border border-white/20">
+                            <SunIcon />
+                            {product.saleTag}
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Content: Compact layout (p-0 wrapper) */}
+            {/* Content */}
             <div className="flex flex-col flex-grow relative z-10 bg-white">
-                {/* Title */}
-                <div className="pt-2 px-2 mb-4">
-                    <h3 className="font-bold text-lg sm:text-xl truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
+                {/* Title increased */}
+                <div className="pt-3 px-2 mb-4">
+                    <h3 className="font-bold text-xl sm:text-2xl truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
                 </div>
                 
-                {/* Extra Info - mx-2 spacing, my-4 vertical spacing */}
+                {/* Extra Info Spacing Increased */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="my-4 bg-gray-50 py-1 px-2 mx-2 rounded border border-gray-100 space-y-1">
+                    <div className="my-5 bg-gray-50 py-1.5 px-2 mx-2 rounded border border-gray-100 space-y-3 sm:space-y-1">
                         {product.extraInfo.map((info, idx) => (
                             <div key={idx} className="flex items-center gap-1.5 text-[9px] text-gray-700">
                                 <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
@@ -206,20 +237,19 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                 )}
 
                 <div className="mt-auto px-2">
-                     {/* Prices - Left Aligned */}
-                    <div className="mb-4 text-left">
-                         {/* Original Price (Strikethrough) */}
+                     {/* Price Increased */}
+                    <div className="mb-6 text-left">
                         {product.originalPrice > product.discountedPrice && (
-                            <span className="text-[10px] text-gray-400 line-through block mb-0.5 text-left">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
+                            <span className="text-sm text-gray-400 line-through block mb-0.5 text-left">Rp{product.originalPrice.toLocaleString('id-ID')}</span>
                         )}
-                        <p className="text-sm sm:text-base font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
                     </div>
 
-                    {/* Stock Bar */}
-                    {!product.isSaleClosed && !product.isComingSoon && product.stock > 0 && (
-                        <div className="mb-4">
+                    {/* Stock Bar: h-2 mobile, h-1.5 desktop */}
+                    {!product.isSaleClosed && (!product.isComingSoon || isReleased) && product.stock > 0 && (
+                        <div className="mb-6">
                              <div className="flex items-center justify-between gap-1 mb-1">
-                                <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden border border-gray-200">
+                                <div className="w-full bg-gray-100 rounded-full h-2 sm:h-1.5 overflow-hidden border border-gray-200">
                                     <div className="bg-gradient-to-r from-green-400 to-green-600 h-full rounded-full transition-all duration-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" style={{ width: `${barWidth}%` }}></div>
                                 </div>
                                 <p className="text-xs text-gray-500 font-mono font-bold whitespace-nowrap">{stockText}</p>
@@ -228,6 +258,14 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                     )}
                 </div>
             </div>
+
+            {/* Countdown: Absolute Positioned above button. Only show if effectively coming soon. */}
+            {product.isComingSoon && !isReleased && !product.isSaleClosed && (product.releaseDate || 0) > 0 && (
+                 <div className="absolute bottom-14 right-3 z-20 pointer-events-none">
+                    <ProductCountdown targetDate={product.releaseDate!} />
+                 </div>
+            )}
+            
             {getButton()}
         </div>
     );
@@ -236,7 +274,6 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
 const Logo = () => (
     <h1 className="flex items-baseline select-none cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
         <div className="flex items-baseline tracking-tighter gap-0.5">
-             {/* Removed drop-shadow */}
             <span className="font-vanguard text-brand-orange text-2xl sm:text-3xl tracking-wide leading-none">
                 KELIK
             </span>
@@ -427,7 +464,6 @@ const GuestPanel: React.FC = () => {
 const GuestHome: React.FC<{ products: Product[], banner: string | null, onNavigateCatalog: () => void, onProductClick: (p: Product) => void, onAuthClick: (register: boolean) => void }> = ({ products, banner, onNavigateCatalog, onProductClick, onAuthClick }) => (
     <div className="text-center py-4 sm:py-8">
         {banner && (
-            // Reduced max-height on desktop for smaller banner (max-h-[140px])
             <div className="hidden md:block w-full max-w-3xl mx-auto mb-8 rounded-xl overflow-hidden shadow-xl border-2 border-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
                 <CachedImage src={banner} alt="Banner" className="w-full h-auto max-h-[140px] object-cover transition-transform duration-700 group-hover:scale-105" />
             </div>
@@ -435,11 +471,11 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
 
         <div className="max-w-3xl mx-auto mb-8">
             <div className="flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-1.5 mb-4">
-                <span className="text-xl sm:text-4xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
+                {/* Increased Welcome Text Size: text-5xl on mobile */}
+                <span className="text-5xl sm:text-6xl md:text-7xl font-oswald text-gray-800 tracking-wide lowercase">
                     selamat datang di
                 </span>
                 <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
-                     {/* Removed drop-shadow */}
                     <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-5xl tracking-wide leading-none">
                         KELIK
                     </span>
@@ -465,7 +501,6 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
         
          <div className="bg-white py-6 border-t border-gray-100">
              <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
-             {/* Ensure 5 columns on XL desktop */}
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
                 {products.slice(0, 5).map(p => (
                      <div key={p.id} className="transform origin-top">
@@ -481,7 +516,6 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
 const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => void }> = ({ products, onAction }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Produk</h2>
-        {/* Ensure 5 columns on XL desktop */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                  <ProductCard key={p.id} product={p} onAction={onAction} />
@@ -491,7 +525,6 @@ const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => vo
 );
 
 const GuestInfo: React.FC = () => {
-    // ... GuestInfo implementation remains same
     const faqs = [
         { q: "Apa itu KELIKin.com?", a: "KELIKin.com adalah toko unik yang menjual dan menerima pesanan barang fisik (karya seni, kerajinan) serta produk non-fisik seperti Website (Web Online)." },
         { q: "Bagaimana cara memesan?", a: "Silahkan login atau daftar akun terlebih dahulu. Pilih produk yang anda inginkan, masukkan ke keranjang, dan lakukan checkout." },
@@ -567,7 +600,6 @@ const GuestInfo: React.FC = () => {
 };
 
 const LoginRegister: React.FC<{ isRegister: boolean, setIsRegister: (v: boolean) => void, close: () => void }> = ({ isRegister, setIsRegister, close }) => {
-    // ... LoginRegister implementation remains same
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
@@ -602,7 +634,6 @@ const LoginRegister: React.FC<{ isRegister: boolean, setIsRegister: (v: boolean)
                 <p className="text-[10px] text-gray-500">{isRegister ? 'Isi data diri anda untuk mendaftar' : 'Silahkan login untuk melanjutkan'}</p>
             </div>
 
-             {/* Small Logo below Welcome Text */}
              <div className="flex justify-center mb-4">
                 <div className="flex items-baseline select-none">
                     <div className="flex items-baseline tracking-tighter gap-0.5">
