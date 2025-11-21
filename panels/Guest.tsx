@@ -497,7 +497,7 @@ const GuestHome: React.FC<{ products: Product[], banner: string | null, onNaviga
                     selamat datang di
                 </span>
                 <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
-                    <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-5xl tracking-wide leading-none">
+                    <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-4xl tracking-wide leading-none">
                         KELIK
                     </span>
                     <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-2xl md:text-3xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">
