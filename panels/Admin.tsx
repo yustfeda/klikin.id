@@ -363,7 +363,7 @@ const AdminPanel: React.FC = () => {
     );
 };
 
-// ... ManageMessages, ManageSettings, Overview, ManageUsers remain unchanged ...
+// ... ManageMessages, ManageSettings, Overview, ManageUsers ...
 const ManageMessages = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -803,7 +803,6 @@ const Overview = () => {
     );
 };
 
-// ... ManageUsers, ManageProducts, ManageOrders remain same (except for re-export) ...
 const ManageUsers = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -904,7 +903,9 @@ const ManageProducts = () => {
             enableWholesale: product.enableWholesale || false,
             wholesaleMinQty: product.wholesaleMinQty || 10,
             wholesalePercent: product.wholesalePercent || 2,
-            releaseDate: product.releaseDate || 0
+            releaseDate: product.releaseDate || 0,
+            isSaleClosed: product.isSaleClosed || false,
+            isComingSoon: product.isComingSoon || false
         });
         setEditId(product.id);
         setIsEditing(true);
@@ -983,7 +984,9 @@ const ManageProducts = () => {
             enableWholesale: form.enableWholesale || false,
             wholesaleMinQty: Number(form.wholesaleMinQty) || 0,
             wholesalePercent: Number(form.wholesalePercent) || 0,
-            releaseDate: form.releaseDate || 0
+            releaseDate: form.releaseDate || 0,
+            isSaleClosed: form.isSaleClosed || false,
+            isComingSoon: form.isComingSoon || false
         };
 
         if (editId) {
@@ -1111,8 +1114,12 @@ const ManageProducts = () => {
                                 <div><label className="block text-[10px] font-bold text-gray-700 mb-1">Link Beli</label><input type="url" className="w-full border border-gray-300 rounded p-1.5 bg-white text-gray-900 text-[10px]" value={form.buyLink || ''} onChange={e => setForm({...form, buyLink: e.target.value})} /></div>
                             </div>
 
-                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-2">
-                                <div className="flex items-center justify-between">
+                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-3">
+                                <div className="flex flex-col gap-2">
+                                     <div className="flex items-center gap-2">
+                                        <input type="checkbox" id="isClosed" checked={form.isSaleClosed} onChange={e => setForm({...form, isSaleClosed: e.target.checked})} className="rounded text-brand-red focus:ring-brand-red" />
+                                        <label htmlFor="isClosed" className="text-[10px] font-bold text-gray-800 flex items-center gap-1"><LockIcon /> Tutup Penjualan (Manual Close)</label>
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <input type="checkbox" id="comingSoon" checked={form.isComingSoon} onChange={e => setForm({...form, isComingSoon: e.target.checked})} className="rounded text-brand-red focus:ring-brand-red" />
                                         <label htmlFor="comingSoon" className="text-[10px] font-bold text-gray-800 flex items-center gap-1"><ClockIcon /> Status: Segera Hadir</label>
