@@ -4,7 +4,7 @@ import { useAuth } from '../App';
 import { OverviewIcon, UsersIcon, ProductIcon, OrdersIcon, LogoutIcon, TrashIcon, EditIcon, CheckIcon, XCircleIcon, LockIcon, SearchIcon, XMarkIcon, ClockIcon, GlobeAltIcon, EnvelopeIcon, PaperAirplaneIcon, SettingsIcon } from '../components/Icons';
 import { User, Product, Order, OrderStatus, InvoiceSettings, ProductCategory, Message } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { subscribeToOrders, subscribeToProducts, subscribeToUsers, updateOrderStatus, addProduct, updateProduct, deleteProduct, deleteUser, toggleUserStatus, updateBanner, subscribeToBanner, updateInvoiceSettings, subscribeToInvoiceSettings, deleteOrder, deleteAllOrdersByUser, sendMessage, subscribeToMessages, deleteMessage, updateBackgrounds, subscribeToBackgrounds, updateThemeColor } from '../services/firebase';
+import { subscribeToOrders, subscribeToProducts, subscribeToUsers, updateOrderStatus, addProduct, updateProduct, deleteProduct, deleteUser, toggleUserStatus, updateBanner, subscribeToBanner, updateMobileBanner, subscribeToMobileBanner, updateInvoiceSettings, subscribeToInvoiceSettings, deleteOrder, deleteAllOrdersByUser, sendMessage, subscribeToMessages, deleteMessage, updateBackgrounds, subscribeToBackgrounds, updateThemeColor } from '../services/firebase';
 
 const hexToRgba = (hex: string, alpha: number) => {
     let c: any;
@@ -249,9 +249,15 @@ const AdminPanel: React.FC = () => {
     const auth = useAuth();
     
     // Check if theme is dark for header adaptations
-    const isDark = ['#000000', '#172554', '#0F766E'].includes(auth.themeColor);
+    const isDark = ['#000000', '#172554', '#0F766E', '#001F3F'].includes(auth.themeColor);
     const navInactiveClass = isDark ? 'text-white/90 hover:bg-white/10 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red';
     const hamburgerLineClass = isDark ? 'bg-white' : 'bg-gray-800';
+    
+    // Specific logic for "Biru Tua Solid" theme
+    const isSolidBlue = auth.themeColor === '#001F3F';
+    const headerStyle = isSolidBlue 
+        ? { backgroundColor: auth.themeColor } // Solid
+        : { backgroundColor: hexToRgba(auth.themeColor, 0.78) };
 
     useEffect(() => {
         const unsub = subscribeToOrders((orders) => {
@@ -332,8 +338,8 @@ const AdminPanel: React.FC = () => {
         <>
              {isLoading && <LoadingScreen />}
              <header 
-                className="backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14"
-                style={{ backgroundColor: hexToRgba(auth.themeColor, 0.78) }}
+                className={`fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14 ${isSolidBlue ? '' : 'backdrop-blur-md'}`}
+                style={headerStyle}
              >
                 <Logo />
                 <nav className="hidden md:flex items-center space-x-4">
@@ -499,6 +505,7 @@ const ManageMessages = () => {
 
 const ManageSettings = () => {
     const [banner, setBanner] = useState<string | null>(null);
+    const [mobileBanner, setMobileBanner] = useState<string | null>(null);
     const [backgrounds, setBackgrounds] = useState<{mobile: string|null, desktop: string|null}>({mobile: null, desktop: null});
     const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings>({
         companyName: 'KELIKin.com',
@@ -508,7 +515,7 @@ const ManageSettings = () => {
         ownerName: ''
     });
     const [rawImage, setRawImage] = useState<string | null>(null);
-    const [cropType, setCropType] = useState<'banner' | 'logo' | 'signature' | 'bg-mobile' | 'bg-desktop'>('banner');
+    const [cropType, setCropType] = useState<'banner' | 'bannerMobile' | 'logo' | 'signature' | 'bg-mobile' | 'bg-desktop'>('banner');
     const [bgDeleteType, setBgDeleteType] = useState<'mobile' | 'desktop' | null>(null);
     
     const auth = useAuth();
@@ -519,18 +526,20 @@ const ManageSettings = () => {
         { name: 'Hijau Kebiruan', hex: '#0F766E' },
         { name: 'Biru Tua', hex: '#172554' },
         { name: 'Hitam', hex: '#000000' },
+        { name: 'Biru Tua Solid', hex: '#001F3F' },
     ];
 
     useEffect(() => {
         const unsubBanner = subscribeToBanner(setBanner);
+        const unsubMobileBanner = subscribeToMobileBanner(setMobileBanner);
         const unsubInv = subscribeToInvoiceSettings((settings) => {
             if (settings) setInvoiceSettings(settings);
         });
         const unsubBg = subscribeToBackgrounds(setBackgrounds);
-        return () => { unsubBanner(); unsubInv(); unsubBg(); };
+        return () => { unsubBanner(); unsubMobileBanner(); unsubInv(); unsubBg(); };
     }, []);
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'banner' | 'logo' | 'signature' | 'bg-mobile' | 'bg-desktop') => {
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'banner' | 'bannerMobile' | 'logo' | 'signature' | 'bg-mobile' | 'bg-desktop') => {
         const file = e.target.files?.[0];
         if (file) {
             setCropType(type);
@@ -543,6 +552,7 @@ const ManageSettings = () => {
     const handleCropComplete = async (croppedBase64: string) => {
         try {
             if (cropType === 'banner') await updateBanner(croppedBase64);
+            else if (cropType === 'bannerMobile') await updateMobileBanner(croppedBase64);
             else if (cropType === 'logo') await updateInvoiceSettings({ ...invoiceSettings, logoUrl: croppedBase64 });
             else if (cropType === 'signature') await updateInvoiceSettings({ ...invoiceSettings, signatureUrl: croppedBase64 });
             else if (cropType === 'bg-mobile') await updateBackgrounds('mobile', croppedBase64);
@@ -595,19 +605,31 @@ const ManageSettings = () => {
                              </button>
                          ))}
                      </div>
-                     <p className="text-[9px] text-gray-500 mt-2">*Header dan Footer akan otomatis transparan 78%.</p>
+                     <p className="text-[9px] text-gray-500 mt-2">*Tema "Biru Tua Solid" membuat Header & Footer tidak transparan.</p>
                  </div>
 
                  <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
-                    <h3 className="text-sm font-semibold mb-3">Banner Beranda</h3>
+                    <h3 className="text-sm font-semibold mb-3">Banner Beranda (Desktop)</h3>
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 cursor-pointer relative h-24 flex items-center justify-center bg-white shadow-inner">
                         <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'banner')} />
                         <div className="flex flex-col items-center">
                              <GlobeAltIcon className="w-6 h-6 text-gray-900 mb-1" />
-                             <span className="text-gray-900 font-bold text-[10px]">Upload Banner</span>
+                             <span className="text-gray-900 font-bold text-[10px]">Upload Banner Desktop</span>
                         </div>
                     </div>
                     {banner && <CachedImage src={banner} alt="Banner" className="w-full mt-3 rounded-lg border h-20 object-cover" />}
+                 </div>
+
+                 <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
+                    <h3 className="text-sm font-semibold mb-3">Banner Beranda (HP/Mobile)</h3>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 cursor-pointer relative h-24 flex items-center justify-center bg-white shadow-inner">
+                        <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => handleImageUpload(e, 'bannerMobile')} />
+                        <div className="flex flex-col items-center">
+                             <GlobeAltIcon className="w-6 h-6 text-gray-900 mb-1" />
+                             <span className="text-gray-900 font-bold text-[10px]">Upload Banner HP</span>
+                        </div>
+                    </div>
+                    {mobileBanner && <CachedImage src={mobileBanner} alt="Mobile Banner" className="w-full mt-3 rounded-lg border h-32 object-cover" />}
                  </div>
                  
                  <div className="bg-white p-4 rounded-xl shadow-md border border-gray-100 md:col-span-2">
@@ -668,8 +690,8 @@ const ManageSettings = () => {
                     src={rawImage} 
                     onCrop={handleCropComplete} 
                     onCancel={() => setRawImage(null)} 
-                    cropWidth={cropType.startsWith('bg') ? 360 : (cropType === 'banner' ? 600 : 200)}
-                    cropHeight={cropType === 'bg-mobile' ? 640 : (cropType === 'bg-desktop' ? 200 : (cropType === 'banner' ? 200 : 100))}
+                    cropWidth={cropType.startsWith('bg') ? 360 : (cropType === 'banner' ? 600 : (cropType === 'bannerMobile' ? 320 : 200))}
+                    cropHeight={cropType === 'bg-mobile' ? 640 : (cropType === 'bg-desktop' ? 200 : (cropType === 'banner' ? 200 : (cropType === 'bannerMobile' ? 120 : 100)))}
                     title={cropType.startsWith('bg') ? "Sesuaikan Background" : "Sesuaikan Gambar"}
                 />
             )}

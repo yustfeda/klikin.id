@@ -4,7 +4,7 @@ import { useAuth } from '../App';
 import { HomeIcon, ProductIcon, CartIcon, PaymentIcon, OrdersIcon, ProfileIcon, LogoutIcon, ClockIcon, LockIcon, SunIcon, GlobeAltIcon, MapPinIcon, CalendarIcon, InfoIcon, TrashIcon, CheckIcon, XMarkIcon, EditIcon, HeadsetIcon, EnvelopeIcon, WhatsappIcon, PlusIcon, MinusIcon, XCircleIcon, PaperAirplaneIcon } from '../components/Icons';
 import { Product, Order, OrderStatus, InvoiceSettings, ProductCategory, Message, User } from '../types';
 import { analyzePaymentProof } from '../services/geminiService';
-import { subscribeToProducts, createOrder, subscribeToOrders, updateOrderProof, updateUserProfile, hideOrderForUser, subscribeToInvoiceSettings, updateOrderStatus, subscribeToMessages, markMessageAsRead, deleteUser } from '../services/firebase';
+import { subscribeToProducts, createOrder, subscribeToOrders, updateOrderProof, updateUserProfile, hideOrderForUser, subscribeToInvoiceSettings, updateOrderStatus, subscribeToMessages, markMessageAsRead, deleteUser, subscribeToBanner, subscribeToMobileBanner } from '../services/firebase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -285,10 +285,10 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
     const total = sold + remaining;
     const barWidth = total > 0 ? (sold / total) * 100 : 0;
     
-    // Priority Logic: Close > Coming Soon > Stock 0 > Buy
-    const isClosed = product.isSaleClosed; 
+    // Priority Logic: Close > Coming Soon > Buy
+    // "Close" priority triggers if manually closed OR stock is empty
+    const isClosed = product.isSaleClosed || product.stock <= 0; 
     const isComingSoon = product.isComingSoon;
-    const isOutOfStock = product.stock <= 0;
 
     const getExtraInfoIcon = (type?: string) => {
         switch(type) {
@@ -306,20 +306,22 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
     const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 md:mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
-        // Priority 1: Manual Close by Admin
+        // Priority 1: Close or Stock Empty
         if (isClosed) {
+             // Use "CLOSE" text if manually closed, "HABIS" if stock 0, but prompt asked for "Close" button style
+             const btnText = product.isSaleClosed ? "CLOSE" : "HABIS";
              return (
                 <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
-                        <span className="uppercase">CLOSE</span>
+                        <span className="uppercase">{btnText}</span>
                     </div>
                     <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
 
-        // Priority 2: Coming Soon (Admin Setting overrides Stock 0 if set)
+        // Priority 2: Coming Soon
         if (isComingSoon) {
              return (
                 <div className={`${buttonBaseClass} bg-yellow-400 text-gray-900 border-b-2 border-yellow-600 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
@@ -335,23 +337,10 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                 </div>
             );
         }
-        
-        // Priority 3: Out of Stock (System Close)
-        if (isOutOfStock) {
-             return (
-                <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
-                    <div className="flex items-center gap-1 leading-none mt-1">
-                        <LockIcon />
-                        <span className="uppercase">HABIS</span>
-                    </div>
-                    <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
-                </div>
-            );
-        }
 
-        // Priority 4: Buy Now
+        // Priority 3: Buy Now - UPDATED COLOR to Dark Blue
         return (
-             <button onClick={onBuy} className={`${buttonBaseClass} bg-blue-400 text-white border-b-2 border-blue-500 hover:bg-blue-500 hover:shadow-blue-400/50`}>
+             <button onClick={onBuy} className={`${buttonBaseClass} bg-blue-900 text-white border-b-2 border-blue-950 hover:bg-blue-800 hover:shadow-blue-900/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
                 <span className="transform transition-transform duration-300 group-hover:translate-x-1">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
@@ -380,12 +369,6 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
                             <span className="text-brand-orange font-bold text-[10px]">SOON</span>
-                        </div>
-                    </div>
-                ) : isOutOfStock ? (
-                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
-                            <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
                         </div>
                     </div>
                 ) : null}
@@ -444,7 +427,7 @@ const UserProductCard: React.FC<{ product: Product; onBuy: () => void; onAddToCa
                         <div className="flex items-center justify-between min-h-[24px]">
                              <p className="text-xl sm:text-2xl font-bold text-brand-red text-left">Rp{product.discountedPrice.toLocaleString('id-ID')}</p>
 
-                             {!isClosed && !isComingSoon && !isOutOfStock && (
+                             {!isClosed && !isComingSoon && (
                                  <button 
                                     onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
                                     className="w-8 h-8 p-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-brand-yellow text-gray-600 hover:text-brand-red transition-colors group/cart animate-ring-interval flex items-center justify-center"
@@ -629,9 +612,15 @@ const UserPanel: React.FC = () => {
     const auth = useAuth();
 
     // Check if theme is dark for header adaptations
-    const isDark = ['#000000', '#172554', '#0F766E'].includes(auth.themeColor);
+    const isDark = ['#000000', '#172554', '#0F766E', '#001F3F'].includes(auth.themeColor);
     const navInactiveClass = isDark ? 'text-white/90 hover:bg-white/10 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red';
     const hamburgerLineClass = isDark ? 'bg-white' : 'bg-gray-800';
+    
+    // Specific logic for "Biru Tua Solid" theme
+    const isSolidBlue = auth.themeColor === '#001F3F';
+    const headerStyle = isSolidBlue 
+        ? { backgroundColor: auth.themeColor } // Solid
+        : { backgroundColor: hexToRgba(auth.themeColor, 0.78) };
 
     useEffect(() => {
         const unsubProd = subscribeToProducts(setProducts);
@@ -815,7 +804,7 @@ Mohon diproses.`;
 
     const renderContent = () => {
         const components: { [key: string]: React.ReactNode } = {
-            'home': <UserHome products={products} onBuy={handleBuyNow} addToCart={addToCart} />,
+            'home': <UserHome products={products} onBuy={handleBuyNow} addToCart={addToCart} orders={orders} />,
             'products': <UserProducts products={products} onBuy={handleBuyNow} addToCart={addToCart} />,
             'cart': <UserCart cartItems={cartItems} onRemove={removeFromCart} onBuy={handleBuyFromCart} products={products} />,
             'orders': <UserOrders orders={orders} />,
@@ -834,8 +823,8 @@ Mohon diproses.`;
         <>
              {isLoading && <LoadingScreen />}
              <header 
-                className="backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14"
-                style={{ backgroundColor: hexToRgba(auth.themeColor, 0.78) }}
+                className={`fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14 ${isSolidBlue ? '' : 'backdrop-blur-md'}`}
+                style={headerStyle}
              >
                 <Logo />
                 <nav className="hidden md:flex items-center space-x-4">
@@ -879,40 +868,66 @@ Mohon diproses.`;
     );
 };
 
-const UserHome: React.FC<{ products: Product[], onBuy: (p: Product) => void, addToCart: (p: Product) => void }> = ({ products, onBuy, addToCart }) => (
-    <div className="text-center py-4 sm:py-8">
-        <div className="max-w-3xl mx-auto mb-8">
-            <div className="flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-1.5 mb-4">
-                <span className="text-5xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
-                    selamat datang di
-                </span>
-                <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
-                    <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-5xl tracking-wide leading-none">
-                        KELIK
-                    </span>
-                    <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-2xl md:text-3xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">
-                        in.com
-                    </span>
-                </div>
-            </div>
-        </div>
+const UserHome: React.FC<{ products: Product[], onBuy: (p: Product) => void, addToCart: (p: Product) => void, orders: Order[] }> = ({ products, onBuy, addToCart, orders }) => {
+    const [mobileBanner, setMobileBanner] = useState<string | null>(null);
+    const [desktopBanner, setDesktopBanner] = useState<string | null>(null);
+    const auth = useAuth();
 
-         <div className="bg-white py-6 border-t border-gray-100">
-             <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Terbaru</h3>
-             {/* Changed Grid to ensure smaller cards on large screens (xl:grid-cols-5) */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
-                {products.slice(0, 8).map(p => (
-                    <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => addToCart(p)} />
-                ))}
+    useEffect(() => {
+        const unsubMobile = subscribeToMobileBanner(setMobileBanner);
+        const unsubDesktop = subscribeToBanner(setDesktopBanner);
+        return () => { unsubMobile(); unsubDesktop(); };
+    }, []);
+
+    return (
+        <div className="text-center py-4 sm:py-8">
+            {/* Banner Section */}
+            <div className="w-full max-w-3xl mx-auto mb-6 rounded-xl overflow-hidden shadow-xl border-2 border-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
+                {/* Mobile Banner (Visible on small screens) */}
+                {mobileBanner && (
+                    <div className="block md:hidden">
+                         <CachedImage src={mobileBanner} alt="Promo" className="w-full h-auto object-cover" />
+                    </div>
+                )}
+                {/* Desktop Banner (Visible on medium+ screens) */}
+                {desktopBanner && (
+                     <div className="hidden md:block">
+                         <CachedImage src={desktopBanner} alt="Promo" className="w-full h-auto max-h-[200px] object-cover transition-transform duration-700 group-hover:scale-105" />
+                     </div>
+                )}
+                {/* Fallback if only one exists and screen matches otherwise */}
+                {!mobileBanner && desktopBanner && <div className="block md:hidden"><CachedImage src={desktopBanner} alt="Promo" className="w-full h-auto object-cover" /></div>}
             </div>
-         </div>
-    </div>
-);
+
+            {/* Welcome Message - ALWAYS VISIBLE */}
+            {auth.currentUser && (
+                 <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+                    <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-1">
+                        Selamat Datang, <span className="text-brand-red">{auth.currentUser.username}</span>
+                    </h1>
+                    <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto italic">
+                        Selamat datang {auth.currentUser.username}, santai sejenak dan lihat-lihat produk terbaru kami...
+                    </p>
+                </div>
+            )}
+
+             <div className="bg-white py-6 border-t border-gray-100">
+                 <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Terbaru</h3>
+                 {/* Increased Grid Columns to lg:grid-cols-5 xl:grid-cols-6 to reduce card width */}
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
+                    {products.slice(0, 10).map(p => (
+                        <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => addToCart(p)} />
+                    ))}
+                </div>
+             </div>
+        </div>
+    );
+};
 
 const UserProducts: React.FC<{ products: Product[], onBuy: (p: Product) => void, addToCart: (p: Product) => void }> = ({ products, onBuy, addToCart }) => (
      <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Semua Produk</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                 <UserProductCard key={p.id} product={p} onBuy={() => onBuy(p)} onAddToCart={() => addToCart(p)} />
             ))}
@@ -961,6 +976,8 @@ const UserOrders: React.FC<{ orders: Order[] }> = ({ orders }) => {
     const [viewingProof, setViewingProof] = useState<Order | null>(null);
     const [uploadingOrderId, setUploadingOrderId] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [tempFiles, setTempFiles] = useState<{[key: string]: string}>({}); // Staging for proofs
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const auth = useAuth();
 
@@ -969,30 +986,46 @@ const UserOrders: React.FC<{ orders: Order[] }> = ({ orders }) => {
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && uploadingOrderId) {
-            setIsUploading(true);
             const reader = new FileReader();
-            reader.onloadend = async () => {
-                try {
-                    const base64 = reader.result as string;
-                    await updateOrderProof(uploadingOrderId, base64);
-                    auth.showNotification({ type: 'success', message: 'Bukti pembayaran diupload!' });
-                    
-                    // Analyze with Gemini (Optional Feature)
-                    // const analysis = await analyzePaymentProof(file);
-                    // console.log("Gemini Analysis:", analysis);
-
-                } catch (error) {
-                    auth.showNotification({ type: 'error', message: 'Gagal upload bukti.' });
-                } finally {
-                    setIsUploading(false);
-                    setUploadingOrderId(null);
-                }
+            reader.onloadend = () => {
+                const base64 = reader.result as string;
+                setTempFiles(prev => ({ ...prev, [uploadingOrderId]: base64 }));
+                setUploadingOrderId(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleSendProof = async (orderId: string) => {
+        const proof = tempFiles[orderId];
+        if (!proof) return;
+
+        setIsUploading(true);
+        try {
+            await updateOrderProof(orderId, proof);
+            auth.showNotification({ type: 'success', message: 'Bukti pembayaran berhasil dikirim!' });
+            setTempFiles(prev => {
+                const next = { ...prev };
+                delete next[orderId];
+                return next;
+            });
+        } catch (error) {
+            auth.showNotification({ type: 'error', message: 'Gagal mengirim bukti.' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleCancelTemp = (orderId: string) => {
+        setTempFiles(prev => {
+            const next = { ...prev };
+            delete next[orderId];
+            return next;
+        });
     };
 
     const handleDeleteHistory = async (orderId: string) => {
@@ -1050,14 +1083,43 @@ const UserOrders: React.FC<{ orders: Order[] }> = ({ orders }) => {
                                 
                                 <div className="flex gap-2">
                                     {order.status === OrderStatus.PENDING && (
-                                        <button 
-                                            onClick={() => handleUploadClick(order.id)}
-                                            disabled={isUploading}
-                                            className="px-3 py-1.5 bg-brand-blue text-white rounded-lg font-bold text-[10px] hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-1"
-                                        >
-                                           {isUploading && uploadingOrderId === order.id ? 'Uploading...' : (order.paymentProof ? 'Ganti Bukti' : 'Upload Bukti')}
-                                        </button>
+                                        <>
+                                            {order.paymentProof && !tempFiles[order.id] ? (
+                                                <button 
+                                                    disabled
+                                                    className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg font-bold text-[10px] shadow-sm flex items-center gap-1 cursor-not-allowed opacity-90"
+                                                >
+                                                    <LockIcon /> Menunggu Konfirmasi
+                                                </button>
+                                            ) : tempFiles[order.id] ? (
+                                                <div className="flex gap-1">
+                                                    <button 
+                                                        onClick={() => handleSendProof(order.id)}
+                                                        disabled={isUploading}
+                                                        className="px-3 py-1.5 bg-green-600 text-white rounded-lg font-bold text-[10px] hover:bg-green-700 transition-colors shadow-sm flex items-center gap-1"
+                                                    >
+                                                        {isUploading ? '...' : <><PaperAirplaneIcon /> Kirim</>}
+                                                    </button>
+                                                     <button 
+                                                        onClick={() => handleCancelTemp(order.id)}
+                                                        disabled={isUploading}
+                                                        className="px-2 py-1.5 bg-gray-200 text-gray-600 rounded-lg font-bold text-[10px] hover:bg-gray-300 flex items-center"
+                                                    >
+                                                        <XMarkIcon />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => handleUploadClick(order.id)}
+                                                    disabled={isUploading}
+                                                    className="px-3 py-1.5 bg-brand-blue text-white rounded-lg font-bold text-[10px] hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-1"
+                                                >
+                                                   Upload Bukti
+                                                </button>
+                                            )}
+                                        </>
                                     )}
+                                    
                                     {order.paymentProof && (
                                          <button onClick={() => setViewingProof(order)} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg font-bold text-[10px] hover:bg-gray-200 transition-colors">Lihat Bukti</button>
                                     )}

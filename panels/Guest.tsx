@@ -4,7 +4,7 @@ import { useAuth } from '../App';
 import { User } from '../types';
 import { HomeIcon, ProductIcon, InfoIcon, LoginIcon, SearchIcon, XMarkIcon, ClockIcon, LockIcon, SunIcon, GlobeAltIcon, MapPinIcon, CalendarIcon, EnvelopeIcon, WhatsappIcon, CheckIcon, PlusIcon, MinusIcon, CartIcon } from '../components/Icons';
 import { Product } from '../types';
-import { subscribeToProducts, loginUser, registerUser, subscribeToBanner } from '../services/firebase';
+import { subscribeToProducts, loginUser, registerUser, subscribeToBanner, subscribeToMobileBanner } from '../services/firebase';
 
 const hexToRgba = (hex: string, alpha: number) => {
     let c: any;
@@ -106,10 +106,9 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     const total = sold + remaining;
     const barWidth = total > 0 ? (sold / total) * 100 : 0;
     
-    // Priority Logic: Close > Coming Soon > Stock 0 > Buy
-    const isClosed = product.isSaleClosed;
+    // Priority Logic: Close > Coming Soon > Buy
+    const isClosed = product.isSaleClosed || product.stock <= 0;
     const isComingSoon = product.isComingSoon;
-    const isOutOfStock = product.stock <= 0;
 
     const getExtraInfoIcon = (type?: string) => {
         switch(type) {
@@ -123,24 +122,25 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
         }
     };
 
-    // Button: Default Red
+    // Button Base
     const buttonBaseClass = "group w-[calc(100%-16px)] mx-2 mb-4 md:mb-2 h-9 rounded-lg font-metropolis font-bold tracking-wide text-[10px] sm:text-xs shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5 mt-auto duration-300 ease-in-out";
 
     const getButton = () => {
-        // Priority 1: Manual Close by Admin
+        // Priority 1: Close or Stock Empty
         if (isClosed) {
+            const btnText = product.isSaleClosed ? "CLOSE" : "HABIS";
             return (
                 <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
                     <div className="flex items-center gap-1 leading-none mt-1">
                         <LockIcon />
-                        <span className="uppercase">CLOSE</span>
+                        <span className="uppercase">{btnText}</span>
                     </div>
                     <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
                 </div>
             );
         }
 
-        // Priority 2: Coming Soon (Admin Setting overrides Stock 0)
+        // Priority 2: Coming Soon
         if (isComingSoon) {
              return (
                 <div className={`${buttonBaseClass} bg-yellow-400 text-gray-900 border-b-2 border-yellow-600 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
@@ -157,22 +157,9 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
             );
         }
         
-        // Priority 3: Out of Stock (System Close)
-        if (isOutOfStock) {
-            return (
-                <div className={`${buttonBaseClass} bg-gray-800 text-white border-b-2 border-gray-900 cursor-not-allowed flex-col !gap-0 !py-0 !h-auto min-h-[36px]`}>
-                    <div className="flex items-center gap-1 leading-none mt-1">
-                        <LockIcon />
-                        <span className="uppercase">HABIS</span>
-                    </div>
-                    <span className="text-[8px] font-sans font-normal opacity-75 leading-none pb-1">{product.totalSold} Terjual</span>
-                </div>
-            );
-        }
-        
-        // Priority 4: Buy Action
+        // Priority 3: Buy Action - UPDATED to Dark Blue
         return (
-            <button onClick={() => onAction(product)} className={`${buttonBaseClass} bg-brand-red text-white border-b-2 border-red-800 hover:bg-red-700 hover:shadow-red-600/50`}>
+            <button onClick={() => onAction(product)} className={`${buttonBaseClass} bg-blue-900 text-white border-b-2 border-blue-950 hover:bg-blue-800 hover:shadow-blue-900/50`}>
                 <span className="mt-0.5 uppercase">Beli Sekarang</span>
                 <span className="transform transition-transform duration-300 group-hover:translate-x-1">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
@@ -200,12 +187,6 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
                             <span className="text-brand-orange font-bold text-[10px]">SOON</span>
-                        </div>
-                    </div>
-                ) : isOutOfStock ? (
-                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse-slow">
-                            <span className="text-brand-red font-bold text-[10px] transform -rotate-12 border-2 border-brand-red px-1 rounded-sm">HABIS</span>
                         </div>
                     </div>
                 ) : null}
@@ -319,9 +300,15 @@ const GuestPanel: React.FC = () => {
     const auth = useAuth();
 
     // Check if theme is dark for header adaptations
-    const isDark = ['#000000', '#172554', '#0F766E'].includes(auth.themeColor);
+    const isDark = ['#000000', '#172554', '#0F766E', '#001F3F'].includes(auth.themeColor);
     const navInactiveClass = isDark ? 'text-white/90 hover:bg-white/10 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red';
     const hamburgerLineClass = isDark ? 'bg-white' : 'bg-gray-800';
+    
+    // Specific logic for "Biru Tua Solid" theme
+    const isSolidBlue = auth.themeColor === '#001F3F';
+    const headerStyle = isSolidBlue 
+        ? { backgroundColor: auth.themeColor } // Solid
+        : { backgroundColor: hexToRgba(auth.themeColor, 0.78) };
 
     useEffect(() => {
         const unsubscribeProd = subscribeToProducts(setProducts);
@@ -413,8 +400,8 @@ const GuestPanel: React.FC = () => {
         <div className="flex-grow w-full bg-transparent font-sans flex flex-col min-h-screen">
              {isLoading && <LoadingScreen />}
              <header 
-                className="backdrop-blur-md fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14"
-                style={{ backgroundColor: hexToRgba(auth.themeColor, 0.78) }}
+                className={`fixed top-0 left-0 right-0 z-40 items-center justify-between px-4 sm:px-6 py-2 shadow-sm flex transition-colors duration-500 h-14 ${isSolidBlue ? '' : 'backdrop-blur-md'}`}
+                style={headerStyle}
              >
                 <Logo />
                 <nav className="hidden md:flex items-center space-x-4">
@@ -481,64 +468,85 @@ const GuestPanel: React.FC = () => {
     );
 };
 
-const GuestHome: React.FC<{ products: Product[], banner: string | null, onNavigateCatalog: () => void, onProductClick: (p: Product) => void, onAuthClick: (register: boolean) => void }> = ({ products, banner, onNavigateCatalog, onProductClick, onAuthClick }) => (
-    <div className="text-center py-4 sm:py-8">
-        {banner && (
-            <div className="hidden md:block w-full max-w-3xl mx-auto mb-8 rounded-xl overflow-hidden shadow-xl border-2 border-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
-                <CachedImage src={banner} alt="Banner" className="w-full h-auto max-h-[140px] object-cover transition-transform duration-700 group-hover:scale-105" />
-            </div>
-        )}
+const GuestHome: React.FC<{ products: Product[], banner: string | null, onNavigateCatalog: () => void, onProductClick: (p: Product) => void, onAuthClick: (register: boolean) => void }> = ({ products, banner, onNavigateCatalog, onProductClick, onAuthClick }) => {
+    const [mobileBanner, setMobileBanner] = useState<string | null>(null);
+    
+    useEffect(() => {
+        const unsubMobile = subscribeToMobileBanner(setMobileBanner);
+        return () => unsubMobile();
+    }, []);
 
-        <div className="max-w-3xl mx-auto mb-8">
-            <div className="flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-1.5 mb-4">
-                {/* Decreased Welcome Text Size on desktop: text-5xl (was 7xl) */}
-                <span className="text-5xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
-                    selamat datang di
-                </span>
-                <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
-                    <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-5xl tracking-wide leading-none">
-                        KELIK
+    return (
+        <div className="text-center py-4 sm:py-8">
+            {/* Banner Section */}
+            <div className="w-full max-w-3xl mx-auto mb-8 rounded-xl overflow-hidden shadow-xl border-2 border-white group cursor-pointer hover:shadow-2xl transition-all duration-500">
+                {/* Mobile Banner */}
+                {mobileBanner && (
+                    <div className="block md:hidden">
+                         <CachedImage src={mobileBanner} alt="Promo" className="w-full h-auto object-cover" />
+                    </div>
+                )}
+                {/* Desktop Banner */}
+                {banner && (
+                     <div className="hidden md:block">
+                         <CachedImage src={banner} alt="Promo" className="w-full h-auto max-h-[140px] object-cover transition-transform duration-700 group-hover:scale-105" />
+                     </div>
+                )}
+                 {/* Fallback if only one exists */}
+                 {!mobileBanner && banner && <div className="block md:hidden"><CachedImage src={banner} alt="Promo" className="w-full h-auto object-cover" /></div>}
+            </div>
+
+            <div className="max-w-3xl mx-auto mb-8">
+                <div className="flex flex-col sm:flex-row items-center sm:items-baseline justify-center gap-1.5 mb-4">
+                    {/* Reduced font size for mobile: text-3xl instead of text-5xl */}
+                    <span className="text-3xl sm:text-6xl md:text-5xl font-oswald text-gray-800 tracking-wide lowercase">
+                        selamat datang di
                     </span>
-                    <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-2xl md:text-3xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">
-                        in.com
-                    </span>
+                    <div className="flex items-baseline tracking-tighter gap-1 transform translate-y-0.5">
+                        <span className="font-vanguard text-brand-orange text-2xl sm:text-4xl md:text-5xl tracking-wide leading-none">
+                            KELIK
+                        </span>
+                        <span className="font-aerion font-bold italic text-brand-blue text-lg sm:text-2xl md:text-3xl tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)] leading-none">
+                            in.com
+                        </span>
+                    </div>
+                </div>
+
+                <p className="text-gray-600 mb-6 max-w-xl mx-auto text-[10px] sm:text-base leading-relaxed px-4">
+                    Platform jual beli karya seni dan produk kreatif terpercaya. Login untuk mulai berbelanja atau hubungi admin untuk info lebih lanjut.
+                </p>
+                
+                <div className="flex flex-row justify-center gap-2 px-4 w-full">
+                    <button onClick={onNavigateCatalog} className="w-auto bg-brand-red text-white font-metropolis font-bold tracking-wide text-[10px] py-2 px-5 rounded-full hover:bg-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-brand-red/30 uppercase whitespace-nowrap">
+                        Lihat Katalog
+                    </button>
+                    <button onClick={() => onAuthClick(false)} className="w-auto bg-white text-gray-800 border border-gray-200 font-metropolis font-bold tracking-wide text-[10px] py-2 px-5 rounded-full hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg uppercase whitespace-nowrap">
+                        Masuk Akun
+                    </button>
                 </div>
             </div>
-
-            <p className="text-gray-600 mb-6 max-w-xl mx-auto text-[10px] sm:text-base leading-relaxed px-4">
-                Platform jual beli karya seni dan produk kreatif terpercaya. Login untuk mulai berbelanja atau hubungi admin untuk info lebih lanjut.
-            </p>
             
-            <div className="flex flex-row justify-center gap-2 px-4 w-full">
-                <button onClick={onNavigateCatalog} className="w-auto bg-brand-red text-white font-metropolis font-bold tracking-wide text-[10px] py-2 px-5 rounded-full hover:bg-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-brand-red/30 uppercase whitespace-nowrap">
-                    Lihat Katalog
-                </button>
-                <button onClick={() => onAuthClick(false)} className="w-auto bg-white text-gray-800 border border-gray-200 font-metropolis font-bold tracking-wide text-[10px] py-2 px-5 rounded-full hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg uppercase whitespace-nowrap">
-                    Masuk Akun
-                </button>
-            </div>
+             <div className="bg-white py-6 border-t border-gray-100">
+                 <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
+                 {/* Increased Grid Columns to lg:grid-cols-5 xl:grid-cols-6 to reduce card width */}
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
+                    {products.slice(0, 5).map(p => (
+                         <div key={p.id} className="transform origin-top">
+                             <ProductCard product={p} onAction={onProductClick} />
+                         </div>
+                    ))}
+                </div>
+                <button onClick={onNavigateCatalog} className="mt-6 text-brand-red font-bold text-xs hover:underline">Lihat Semua Produk &rarr;</button>
+             </div>
         </div>
-        
-         <div className="bg-white py-6 border-t border-gray-100">
-             <h3 className="text-base font-bold mb-4 text-gray-800 text-center">Produk Unggulan</h3>
-             {/* Increased Grid Columns to lg:6 xl:8 to make items smaller */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 px-2 max-w-7xl mx-auto items-start">
-                {products.slice(0, 5).map(p => (
-                     <div key={p.id} className="transform origin-top">
-                         <ProductCard product={p} onAction={onProductClick} />
-                     </div>
-                ))}
-            </div>
-            <button onClick={onNavigateCatalog} className="mt-6 text-brand-red font-bold text-xs hover:underline">Lihat Semua Produk &rarr;</button>
-         </div>
-    </div>
-);
+    );
+};
 
 const GuestCatalog: React.FC<{ products: Product[], onAction: (p: Product) => void }> = ({ products, onAction }) => (
     <div className="py-2 max-w-7xl mx-auto">
         <h2 className="text-base sm:text-xl font-bold mb-4 text-gray-800 flex items-center gap-2"><ProductIcon /> Katalog Produk</h2>
-        {/* Increased Grid Columns to lg:6 xl:8 to make items smaller */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 xl:gap-2 items-start">
+        {/* Increased Grid Columns to lg:grid-cols-5 xl:grid-cols-6 to reduce card width */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 xl:gap-2 items-start">
             {products.map(p => (
                  <ProductCard key={p.id} product={p} onAction={onAction} />
             ))}

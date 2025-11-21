@@ -236,6 +236,17 @@ export const subscribeToBanner = (callback: (banner: string | null) => void) => 
     return () => unsubscribe();
 };
 
+export const updateMobileBanner = async (base64: string) => {
+    await set(ref(database, 'settings/bannerMobile'), base64);
+};
+
+export const subscribeToMobileBanner = (callback: (banner: string | null) => void) => {
+    const unsubscribe = onValue(ref(database, 'settings/bannerMobile'), (snapshot) => {
+        callback(snapshot.val());
+    });
+    return () => unsubscribe();
+};
+
 export const updateBackgrounds = async (type: 'mobile' | 'desktop', base64: string | null) => {
     await set(ref(database, `settings/backgrounds/${type}`), base64);
 };

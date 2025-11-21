@@ -44,14 +44,22 @@ const hexToRgba = (hex: string, alpha: number) => {
 
 const Footer: React.FC<{themeColor: string}> = ({ themeColor }) => {
     // Determine text color based on background brightness
-    const isDark = themeColor === '#000000' || themeColor === '#172554' || themeColor === '#0F766E';
+    const isDark = themeColor === '#000000' || themeColor === '#172554' || themeColor === '#0F766E' || themeColor === '#001F3F';
     const textColor = isDark ? 'text-white/80' : 'text-gray-600';
     const hoverColor = isDark ? 'hover:text-white' : 'hover:text-brand-blue';
+    
+    // Specific logic for "Biru Tua Solid" theme
+    const isSolidBlue = themeColor === '#001F3F';
+    const footerStyle = isSolidBlue 
+        ? { backgroundColor: themeColor } // No RGBA alpha, solid color
+        : { backgroundColor: hexToRgba(themeColor, 0.78) };
+    
+    const backdropClass = isSolidBlue ? '' : 'backdrop-blur-md';
 
     return (
         <footer 
-            className={`backdrop-blur-md py-3 border-t border-gray-200/30 mt-auto transition-colors duration-500 ${textColor}`}
-            style={{ backgroundColor: hexToRgba(themeColor, 0.78) }}
+            className={`${backdropClass} py-3 border-t border-gray-200/30 mt-auto transition-colors duration-500 ${textColor}`}
+            style={footerStyle}
         >
             <div className="container mx-auto px-4 flex flex-col items-center justify-center">
                 <div className="flex space-x-4 mb-2">
@@ -66,7 +74,7 @@ const Footer: React.FC<{themeColor: string}> = ({ themeColor }) => {
                          <div className="w-4 h-4 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"><WhatsappIcon /></div>
                     </a>
                 </div>
-                <p className="text-[8px] opacity-80 tracking-wider font-medium uppercase">© 2025 KELIKin.com reserved | versi.1.3.0</p>
+                <p className="text-[8px] opacity-80 tracking-wider font-medium uppercase">© 2025 KELIKin.com reserved | versi.1.4.2</p>
             </div>
         </footer>
     );
@@ -219,7 +227,8 @@ const App: React.FC = () => {
   
   const showNotification = useCallback((notif: AppNotification) => {
       setNotification(notif);
-      setTimeout(() => setNotification(null), 4000);
+      // Tampilkan notifikasi selama 5 detik seperti yang diminta
+      setTimeout(() => setNotification(null), 5000);
   }, []);
 
   const handleLogin = (user: User) => {
@@ -273,7 +282,7 @@ const App: React.FC = () => {
   return (
     <AuthContext.Provider value={authContextValue}>
         <div 
-            className="flex flex-col min-h-screen w-full bg-gray-200 text-[10px] md:text-sm transition-all duration-500 ease-in-out"
+            className="flex flex-col min-h-screen w-full bg-white text-[10px] md:text-sm transition-all duration-500 ease-in-out"
             style={{
                 backgroundImage: currentBg ? `url(${currentBg})` : undefined,
                 backgroundSize: 'cover',
