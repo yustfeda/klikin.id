@@ -191,9 +191,9 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
     };
 
     return (
-        <div className="group bg-white md:bg-transparent md:shadow-none md:border-0 md:hover:shadow-none md:hover:translate-y-0 rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 md:border-0 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10 pb-1">
+        <div className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 ease-out flex flex-col h-auto border border-gray-100 w-[94%] sm:w-full mx-auto transform hover:-translate-y-1 relative z-10 pb-1">
             {/* Image: Smaller on Desktop (md:h-36) for compact look */}
-            <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden md:rounded-lg">
+            <div className="relative w-full h-48 sm:h-44 md:h-36 overflow-hidden">
                 <CachedImage src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                 
                 {(product.isSaleClosed || product.stock === 0) && (
@@ -233,7 +233,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
             </div>
 
             {/* Content */}
-            <div className="flex flex-col flex-grow relative z-10 bg-white md:bg-transparent">
+            <div className="flex flex-col flex-grow relative z-10 bg-white">
                 {/* Title increased */}
                 <div className="pt-3 px-2 mb-4 md:mb-2 md:pt-1">
                     <h3 className="font-bold text-xl sm:text-2xl truncate text-gray-900 text-left leading-tight group-hover:text-brand-red transition-colors">{product.name}</h3>
@@ -241,7 +241,7 @@ const ProductCard: React.FC<{ product: Product; onAction: (product: Product) => 
                 
                 {/* Extra Info Spacing Increased & Font Size Adjusted for Desktop */}
                 {product.extraInfo && product.extraInfo.length > 0 && (
-                    <div className="my-5 md:my-2 bg-gray-50 md:bg-transparent md:border-0 md:p-0 py-1.5 px-2 mx-2 rounded border border-gray-100 space-y-3 sm:space-y-1">
+                    <div className="my-5 md:my-2 bg-gray-50 py-1.5 px-2 mx-2 rounded border border-gray-100 space-y-3 sm:space-y-1">
                         {product.extraInfo.map((info, idx) => (
                             <div key={idx} className="flex items-center gap-1.5 text-[9px] md:text-[11px] text-gray-700">
                                 <div className="w-3 h-3 flex-shrink-0 flex items-center justify-center text-brand-blue [&>svg]:w-full [&>svg]:h-full">
@@ -319,6 +319,11 @@ const GuestPanel: React.FC = () => {
 
     const auth = useAuth();
 
+    // Check if theme is dark for header adaptations
+    const isDark = ['#000000', '#172554', '#0F766E'].includes(auth.themeColor);
+    const navInactiveClass = isDark ? 'text-white/90 hover:bg-white/10 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red';
+    const hamburgerLineClass = isDark ? 'bg-white' : 'bg-gray-800';
+
     useEffect(() => {
         const unsubscribeProd = subscribeToProducts(setProducts);
         const unsubscribeBanner = subscribeToBanner(setBanner);
@@ -366,14 +371,14 @@ const GuestPanel: React.FC = () => {
 
     const HamburgerIcon = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) => (
         <button onClick={onClick} className="z-50 w-8 h-8 relative focus:outline-none md:hidden transition-all duration-300">
-            <span className={`block w-5 h-0.5 bg-gray-800 absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? 'rotate-45 top-1/2 -translate-y-1/2' : 'top-[32%]'}`}></span>
-            <span className={`block w-5 h-0.5 bg-gray-800 absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 ${isOpen ? 'opacity-0' : ''}`}></span>
-            <span className={`block w-5 h-0.5 bg-gray-800 absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? '-rotate-45 top-1/2 -translate-y-1/2' : 'top-[68%]'}`}></span>
+            <span className={`block w-5 h-0.5 ${hamburgerLineClass} absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? 'rotate-45 top-1/2 -translate-y-1/2' : 'top-[32%]'}`}></span>
+            <span className={`block w-5 h-0.5 ${hamburgerLineClass} absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 ${isOpen ? 'opacity-0' : ''}`}></span>
+            <span className={`block w-5 h-0.5 ${hamburgerLineClass} absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? '-rotate-45 top-1/2 -translate-y-1/2' : 'top-[68%]'}`}></span>
         </button>
     );
 
     const NavLink: React.FC<{ item: any; isActive: boolean; onClick: () => void; isSidebar?: boolean }> = ({ item, isActive, onClick, isSidebar }) => (
-        <button onClick={onClick} className={`group relative flex items-center ${isSidebar ? 'justify-start w-full pl-4' : 'justify-center'} px-3 py-2 rounded-md text-[10px] md:text-sm font-medium transition-all duration-300 ease-in-out ${isActive ? 'bg-brand-red text-white shadow-lg shadow-brand-red/30' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red'}`}>
+        <button onClick={onClick} className={`group relative flex items-center ${isSidebar ? 'justify-start w-full pl-4' : 'justify-center'} px-3 py-2 rounded-md text-[10px] md:text-sm font-medium transition-all duration-300 ease-in-out ${isActive ? 'bg-brand-red text-white shadow-lg shadow-brand-red/30' : navInactiveClass}`}>
             <span className={`transform transition-transform duration-300 ${!isSidebar && 'group-hover:scale-110'} ${isSidebar && 'group-hover:translate-x-2'} ${isActive ? 'scale-110' : ''}`}>{item.icon}</span>
             {isSidebar && <span className="ml-3 font-teko text-base tracking-wide pt-0.5 transition-transform duration-300 group-hover:translate-x-1">{item.name}</span>}
             {!isSidebar && (

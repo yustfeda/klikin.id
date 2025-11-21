@@ -69,11 +69,11 @@ const LoadingScreen = () => (
     </div>
 );
 
-const HamburgerIcon = ({ isOpen, onClick, badgeCount }: {isOpen: boolean, onClick: () => void, badgeCount?: number}) => (
+const HamburgerIcon = ({ isOpen, onClick, badgeCount, lineColor = 'bg-gray-800' }: {isOpen: boolean, onClick: () => void, badgeCount?: number, lineColor?: string}) => (
     <button onClick={onClick} className="z-50 w-8 h-8 relative focus:outline-none md:hidden">
-        <span className={`block w-5 h-0.5 bg-gray-800 absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? 'rotate-45 top-1/2 -translate-y-1/2' : 'top-[32%]'}`}></span>
-        <span className={`block w-5 h-0.5 bg-gray-800 absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 ${isOpen ? 'opacity-0' : ''}`}></span>
-        <span className={`block w-5 h-0.5 bg-gray-800 absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? '-rotate-45 top-1/2 -translate-y-1/2' : 'top-[68%]'}`}></span>
+        <span className={`block w-5 h-0.5 ${lineColor} absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? 'rotate-45 top-1/2 -translate-y-1/2' : 'top-[32%]'}`}></span>
+        <span className={`block w-5 h-0.5 ${lineColor} absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 ${isOpen ? 'opacity-0' : ''}`}></span>
+        <span className={`block w-5 h-0.5 ${lineColor} absolute transition-all duration-300 ease-in-out left-1/2 -translate-x-1/2 ${isOpen ? '-rotate-45 top-1/2 -translate-y-1/2' : 'top-[68%]'}`}></span>
         
         {!isOpen && badgeCount && badgeCount > 0 ? (
              <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full border border-white shadow-sm animate-bounce">
@@ -248,6 +248,11 @@ const AdminPanel: React.FC = () => {
     const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
     const auth = useAuth();
     
+    // Check if theme is dark for header adaptations
+    const isDark = ['#000000', '#172554', '#0F766E'].includes(auth.themeColor);
+    const navInactiveClass = isDark ? 'text-white/90 hover:bg-white/10 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red';
+    const hamburgerLineClass = isDark ? 'bg-white' : 'bg-gray-800';
+
     useEffect(() => {
         const unsub = subscribeToOrders((orders) => {
             setPendingOrdersCount(orders.filter(o => o.status === OrderStatus.PENDING).length);
@@ -287,7 +292,7 @@ const AdminPanel: React.FC = () => {
     const NavLink: React.FC<{ item: any; isActive: boolean; onClick: () => void; isSidebar?: boolean }> = ({ item, isActive, onClick, isSidebar }) => (
         <button
           onClick={onClick}
-          className={`group relative flex items-center ${isSidebar ? 'justify-start w-full pl-4' : 'justify-center'} px-3 py-2 rounded-md text-[10px] md:text-sm font-medium transition-all duration-300 ${isActive ? 'bg-brand-red text-white shadow-lg shadow-brand-red/30' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red'}`}
+          className={`group relative flex items-center ${isSidebar ? 'justify-start w-full pl-4' : 'justify-center'} px-3 py-2 rounded-md text-[10px] md:text-sm font-medium transition-all duration-300 ${isActive ? 'bg-brand-red text-white shadow-lg shadow-brand-red/30' : navInactiveClass}`}
         >
           <span className={`transform transition-transform duration-300 ${!isSidebar && 'group-hover:scale-110'} ${isSidebar && 'group-hover:translate-x-2'} active:scale-95 ${isActive ? 'scale-110' : ''} relative`}>
               {item.icon}
@@ -336,7 +341,7 @@ const AdminPanel: React.FC = () => {
                         <NavLink key={item.name} item={item} isActive={view === item.view} onClick={() => handleNavClick(item.view)} />
                     ))}
                 </nav>
-                <HamburgerIcon isOpen={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} badgeCount={pendingOrdersCount} />
+                <HamburgerIcon isOpen={isSidebarOpen} onClick={() => setSidebarOpen(!isSidebarOpen)} badgeCount={pendingOrdersCount} lineColor={hamburgerLineClass} />
             </header>
 
             <div className={`fixed top-0 left-0 h-full w-64 backdrop-blur-md z-50 transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden shadow-lg border-r border-gray-200`} style={{ backgroundColor: hexToRgba(auth.themeColor, 0.9) }}>
